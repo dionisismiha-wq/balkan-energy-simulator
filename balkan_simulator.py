@@ -1,80 +1,598 @@
-import streamlit as st
-import pandas as pd
+import sqlite3
 import numpy as np
+import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from sklearn.preprocessing import StandardScaler
+from sklearn.ensemble import IsolationForest, RandomForestRegressor
 from sklearn.linear_model import Ridge
-from sklearn.ensemble import RandomForestRegressor, IsolationForest
 from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+import streamlit as st
 
-# Ρύθμιση σελίδας
 st.set_page_config(
-    page_title="Balkan Energy & Economic Convergence Simulator",
+    page_title="Balkan Energy Lakehouse & AI Platform",
     page_icon="⚡",
-    layout="wide"
+    layout="wide",
 )
 
-# 1. Δεδομένα των 11 Βαλκανικών Χωρών (Μέσοι Όροι Διπλωματικής 2018-2023)
+
+# ==============================================================================
+# 1. ΦΟΡΤΩΣΗ ΔΕΔΟΜΕΝΩΝ & ΔΗΜΙΟΥΡΓΙΑ ΒΑΣΗΣ SQLITE ΣΤΗ ΜΝΗΜΗ
+# ==============================================================================
 @st.cache_data
 def load_balkan_data():
-    data = [
-        ("Σλοβενία", "SVN", "EU Balkans", 27878, 36183, 30.3, 2.7, 59.2, 3.2, 6.1),
-        ("Ελλάδα", "GRC", "EU Balkans", 20354, 29256, 20.5, 18.8, 68.4, 2.8, 7.2),
-        ("Κροατία", "HRV", "EU Balkans", 17326, 23611, 8.7, 6.5, 88.8, 3.1, 9.9),
-        ("Ρουμανία", "ROU", "EU Balkans", 14588, 19162, 20.5, 11.1, 94.3, 3.3, 12.2),
-        ("Βουλγαρία", "BGR", "EU Balkans", 11880, 30765, 47.7, 26.4, 80.7, 4.8, 9.3),
-        ("Μαυροβούνιο", "MNE", "Non-EU Balkans", 9536, 19513, 57.1, 13.3, 87.2, 3.9, 15.9),
-        ("Σερβία", "SRB", "Non-EU Balkans", 9233, 27036, 64.4, 9.9, 84.1, 4.5, 13.6),
-        ("Βόρεια Μακεδονία", "MKD", "Non-EU Balkans", 7324, 14451, 47.7, 29.5, 83.9, 4.2, 13.5),
-        ("Βοσνία-Ερζεγοβίνη", "BIH", "Non-EU Balkans", 6982, 21790, 73.5, 22.0, 88.0, 5.1, 10.1),
-        ("Αλβανία", "ALB", "Non-EU Balkans", 6339, 13276, 12.8, 35.4, 96.2, 2.7, 15.7),
-        ("Κόσοβο", "XKX", "Non-EU Balkans", 4939, 16275, 70.2, 40.2, 95.7, 4.6, 17.8)
-    ]
-    cols = [
-        "Χώρα", "ISO3", "Ομάδα", "GDP_pc", "Energy_kWh",
-        "Coal_Share", "Cold_Homes", "Poor_Owners", "Energy_Intensity", "Grid_Loss"
-    ]
-    return pd.DataFrame(data, columns=cols)
+  data = [
+      (
+          "Σλοβενία",
+          "SVN",
+          "EU Balkans",
+          27878,
+          36183,
+          30.3,
+          2.7,
+          59.2,
+          3.2,
+          6.1,
+          32.5,
+      ),
+      (
+          "Ελλάδα",
+          "GRC",
+          "EU Balkans",
+          20354,
+          29256,
+          20.5,
+          18.8,
+          68.4,
+          2.8,
+          7.2,
+          38.1,
+      ),
+      (
+          "Κροατία",
+          "HRV",
+          "EU Balkans",
+          17326,
+          23611,
+          8.7,
+          6.5,
+          88.8,
+          3.1,
+          9.9,
+          64.2,
+      ),
+      (
+          "Ρουμανία",
+          "ROU",
+          "EU Balkans",
+          14588,
+          19162,
+          20.5,
+          11.1,
+          94.3,
+          3.3,
+          12.2,
+          44.0,
+      ),
+      (
+          "Βουλγαρία",
+          "BGR",
+          "EU Balkans",
+          11880,
+          30765,
+          47.7,
+          26.4,
+          80.7,
+          4.8,
+          9.3,
+          23.4,
+      ),
+      (
+          "Μαυροβούνιο",
+          "MNE",
+          "Non-EU Balkans",
+          9536,
+          19513,
+          57.1,
+          13.3,
+          87.2,
+          3.9,
+          15.9,
+          52.0,
+      ),
+      (
+          "Σερβία",
+          "SRB",
+          "Non-EU Balkans",
+          9233,
+          27036,
+          64.4,
+          9.9,
+          84.1,
+          4.5,
+          13.6,
+          31.8,
+      ),
+      (
+          "Βόρεια Μακεδονία",
+          "MKD",
+          "Non-EU Balkans",
+          7324,
+          14451,
+          47.7,
+          29.5,
+          83.9,
+          4.2,
+          13.5,
+          28.5,
+      ),
+      (
+          "Βοσνία-Ερζεγοβίνη",
+          "BIH",
+          "Non-EU Balkans",
+          6982,
+          21790,
+          73.5,
+          22.0,
+          88.0,
+          5.1,
+          10.1,
+          36.4,
+      ),
+      (
+          "Αλβανία",
+          "ALB",
+          "Non-EU Balkans",
+          6339,
+          13276,
+          12.8,
+          35.4,
+          96.2,
+          2.7,
+          15.7,
+          99.4,
+      ),
+      (
+          "Κόσοβο",
+          "XKX",
+          "Non-EU Balkans",
+          4939,
+          16275,
+          70.2,
+          40.2,
+          95.7,
+          4.6,
+          17.8,
+          6.5,
+      ),
+  ]
+  cols = [
+      "Χώρα",
+      "ISO3",
+      "Ομάδα",
+      "GDP_pc",
+      "Energy_kWh",
+      "Coal_Share",
+      "Cold_Homes",
+      "Poor_Owners",
+      "Energy_Intensity",
+      "Grid_Loss",
+      "Renewables_Pct",
+  ]
+  return pd.DataFrame(data, columns=cols)
+
 
 df = load_balkan_data()
 
-# Εκπαίδευση Μοντέλων της Εργασίας (Log-Ridge & Random Forest)
-features = ["Energy_kWh", "Coal_Share", "Cold_Homes", "Poor_Owners", "Energy_Intensity"]
-X = df[features]
-y = df["GDP_pc"]
+# Sidebar με γενικές πληροφορίες & φίλτρα
+with st.sidebar:
+  st.header("⚙️ Πίνακας Ελέγχου Συστήματος")
+  st.markdown("**Αρχιτεκτονική:** Data Lakehouse (Parquet / SQL / Python)")
+  st.markdown("**Κάλυψη:** 11 Βαλκανικές Χώρες (2000–2025)")
+  region_filter = st.multiselect(
+      "Φίλτρο Θεσμικής Ομάδας:",
+      options=["EU Balkans", "Non-EU Balkans"],
+      default=["EU Balkans", "Non-EU Balkans"],
+  )
+  st.divider()
+  st.caption(
+      "Μεταπτυχιακή Διπλωματική Εργασία | Οικονομική Σύγκλιση, Ενεργειακή"
+      " Φτώχεια & Αγορά SEEPEX"
+  )
 
-pipe_log_ridge = make_pipeline(StandardScaler(), Ridge(alpha=1.5))
-pipe_log_ridge.fit(X, np.log(y))
-
-rf_model = RandomForestRegressor(n_estimators=200, random_state=42)
-rf_model.fit(X, y)
-
-# Επικεφαλίδα Εφαρμογής
-st.title("⚡ Διαδραστικό Σύστημα Ανάλυσης Ενεργειακής Ανισότητας & Σύγκλισης στα Βαλκάνια")
-st.markdown(
-    "**Μεταπτυχιακή Διπλωματική Εργασία** | Αρχιτεκτονική Data Lakehouse, Οικονομετρία Fixed Effects & Μηχανική Μάθηση (2000–2025)"
+df_filtered = (
+    df[df["Ομάδα"].isin(region_filter)] if len(region_filter) > 0 else df
 )
 
-tab1, tab2, tab3 = st.tabs([
+# Επικεφαλίδα
+st.title(
+    "⚡ Διαδραστική Πλατφόρμα Ανάλυσης Ενεργειακής Ανισότητας & Σύγκλισης στα"
+    " Βαλκάνια"
+)
+st.markdown(
+    "Ενοποιημένο περιβάλλον **Data Lakehouse, Οικονομετρίας (Two-Way Fixed"
+    " Effects), Μηχανικής Μάθησης (SHAP / Isolation Forest) και Live SQL**"
+)
+
+# KPIs στην κορυφή
+k1, k2, k3, k4 = st.columns(4)
+k1.metric("Επιλεγμένες Χώρες", f"{len(df_filtered)} / 11")
+k2.metric(
+    "Μέσο Κατά Κεφ. ΑΕΠ",
+    f"{df_filtered['GDP_pc'].mean():,.0f} USD",
+    "Χάσμα 2,42x EU/Non-EU",
+)
+k3.metric(
+    "Μέση Ενεργειακή Φτώχεια",
+    f"{df_filtered['Cold_Homes'].mean():.1f}%",
+    "Μ.Ο. Ε.Ε.-27: ~9,5%",
+    delta_color="inverse",
+)
+k4.metric(
+    "Φτωχοί Ιδιοκτήτες Κατοικίας",
+    f"{df_filtered['Poor_Owners'].mean():.1f}%",
+    "Κύριος δομικός παράγοντας",
+    delta_color="inverse",
+)
+
+# 5 Πλήρεις Διαδραστικές Καρτέλες
+tab1, tab2, tab3, tab4, tab5 = st.tabs([
+    "🗺️ Γεωχωρικός Χάρτης & Δείκτες",
     "🎛️ Προσομοιωτής Πολιτικής (What-If)",
-    "🧠 Ερμηνευσιμότητα AI (SHAP & RF)",
-    "📈 Αγορά SEEPEX & Isolation Forest"
+    "🧠 Εργαστήριο AI & SHAP",
+    "📈 SEEPEX & Isolation Forest",
+    "🗄️ Live SQL & Εξαγωγή",
 ])
 
 # ==============================================================================
-# TAB 1: ΠΡΟΣΟΜΟΙΩΤΗΣ ΠΟΛΙΤΙΚΗΣ (ΒΑΣΕΙ TWO-WAY FIXED EFFECTS & LOG-RIDGE)
+# TAB 1: ΔΙΑΔΡΑΣΤΙΚΟΣ ΧΑΡΤΗΣ & ΣΥΓΚΡΙΣΗ ΧΩΡΩΝ
 # ==============================================================================
 with tab1:
-    st.subheader("Προσομοίωση Παρεμβάσεων Ενεργειακής & Στεγαστικής Πολιτικής")
-    st.info(
-        "Επιλέξτε μια βαλκανική χώρα και ρυθμίστε τους μοχλούς πολιτικής. Οι προβλέψεις βασίζονται "
-        "στις εκτιμημένες ελαστικότητες Two-Way Fixed Effects (β₁ = 1,0702, β₂ = −0,8062, δ₁ = −18,4912) "
-        "και στο μοντέλο γενίκευσης Log-Ridge (LOOCV R² = 89,7%)."
+  st.subheader("Διαδραστική Χαρτογράφηση Ενεργειακών & Οικονομικών Ανισοτήτων")
+  metric_map = {
+      "Κατά Κεφαλήν ΑΕΠ (USD)": ("GDP_pc", "Blues"),
+      "Αδυναμία Επαρκούς Θέρμανσης (%)": ("Cold_Homes", "Reds"),
+      "Φτωχοί Ιδιοκτήτες Κατοικίας (%)": ("Poor_Owners", "Oranges"),
+      "Κατά Κεφαλήν Κατανάλωση Ενέργειας (kWh)": ("Energy_kWh", "Viridis"),
+      "Μερίδιο Άνθρακα στις Εκπομπές CO₂ (%)": ("Coal_Share", "Greys"),
+      "Απώλειες Δικτύου Ηλεκτρισμού (%)": ("Grid_Loss", "Purples"),
+      "Μερίδιο ΑΠΕ στην Ηλεκτροπαραγωγή (%)": ("Renewables_Pct", "Greens"),
+  }
+  chosen_label = st.selectbox(
+      "Επιλέξτε δείκτη για απεικόνιση στον χάρτη:", list(metric_map.keys())
+  )
+  col_name, color_scale = metric_map[chosen_label]
+
+  c_map, c_bar = st.columns([1.2, 1])
+  with c_map:
+    fig_map = px.choropleth(
+        df_filtered,
+        locations="ISO3",
+        color=col_name,
+        hover_name="Χώρα",
+        hover_data=["Ομάδα", "GDP_pc", "Cold_Homes", "Coal_Share"],
+        color_continuous_scale=color_scale,
+        scope="europe",
+        title=f"Χάρτης Βαλκανίων: {chosen_label}",
+    )
+    fig_map.update_geos(
+        center=dict(lat=43.5, lon=21.5),
+        projection_scale=5.2,
+        visible=True,
+        showcountries=True,
+    )
+    fig_map.update_layout(height=450, margin=dict(l=0, r=0, t=40, b=0))
+    st.plotly_chart(fig_map, use_container_width=True)
+
+  with c_bar:
+    df_sorted = df_filtered.sort_values(col_name, ascending=True)
+    fig_rank = px.bar(
+        df_sorted,
+        x=col_name,
+        y="Χώρα",
+        color="Ομάδα",
+        orientation="h",
+        text_auto=True,
+        color_discrete_map={
+            "EU Balkans": "#1d4ed8",
+            "Non-EU Balkans": "#dc2626",
+        },
+        title=f"Κατάταξη Χωρών: {chosen_label}",
+    )
+    fig_rank.update_layout(height=450)
+    st.plotly_chart(fig_rank, use_container_width=True)
+
+# ==============================================================================
+# TAB 2: ΠΡΟΣΟΜΟΙΩΤΗΣ ΠΟΛΙΤΙΚΗΣ (WHAT-IF SIMULATOR)
+# ==============================================================================
+with tab2:
+  st.subheader("Προσομοιωτής Πολιτικής & Σύγκλισης (Policy What-If Simulator)")
+  col_ctrl, col_res = st.columns([1, 2])
+
+  with col_ctrl:
+    selected_country = st.selectbox(
+        "Επιλογή Χώρας Στόχου:", df["Χώρα"].tolist(), index=9
+    )
+    row = df[df["Χώρα"] == selected_country].iloc[0]
+    st.markdown(f"**Θεσμική Ομάδα:** `{row['Ομάδα']}` (`{row['ISO3']}`)")
+
+    energy_boost = st.slider(
+        "1. Αύξηση Ενεργειακής Διαθεσιμότητας (%)", 0, 60, 20, 5
+    )
+    intensity_cut = st.slider(
+        "2. Μείωση Ενεργειακής Έντασης (MJ/$)", 0.0, 2.0, 0.6, 0.1
+    )
+    retrofit_share = st.slider(
+        "3. Επιδότηση Θερμομόνωσης Φτωχών Ιδιοκτητών (%)", 0, 50, 25, 5
+    )
+    carbon_price = st.slider(
+        "4. Τιμή Άνθρακα CBAM (€/τόνο CO₂)", 0, 120, 75, 5
     )
 
-    col_ctrl, col_res = st.columns([1, 2])
+  # Οικονομετρικοί υπολογισμοί Fixed Effects (β1=1.0702, β2=-0.8062, δ1=-18.4912)
+  base_gdp = row["GDP_pc"]
+  base_cold = row["Cold_Homes"]
+  delta_log_gdp = (1.0702 * np.log(1 + energy_boost / 100.0)) + (
+      -0.8062 * (-intensity_cut)
+  )
+  sim_gdp_fe = base_gdp * np.exp(delta_log_gdp)
 
-    with col_ctrl:
-        selected_country = st.selectbox("Επιλογή Χώρας:", df["Χώρα"].tolist(), index=9)
-        row = df[df["Χώρα"] == selected_country].iloc[0]
+  # Επιβάρυνση CBAM αν το μερίδιο άνθρακα είναι υψηλό
+  cbam_penalty_pct = (row["Coal_Share"] / 100.0) * (carbon_price / 100.0) * 4.5
+  sim_gdp_net = sim_gdp_fe * (1 - cbam_penalty_pct / 100.0)
+
+  # Νέα Ενεργειακή Φτώχεια
+  sim_cold = max(
+      1.5, base_cold + (-18.4912 * delta_log_gdp) + (-0.35 * retrofit_share)
+  )
+
+  with col_res:
+    m1, m2, m3 = st.columns(3)
+    m1.metric(
+        "Προβλεπόμενο ΑΕΠ (καθαρό CBAM)",
+        f"{sim_gdp_net:,.0f} USD",
+        f"{sim_gdp_net - base_gdp:+,.0f} USD",
+    )
+    m2.metric(
+        "Επιβάρυνση Άνθρακα CBAM",
+        f"-{cbam_penalty_pct:.2f}%",
+        f"Μερίδιο Άνθρακα: {row['Coal_Share']}%",
+        delta_color="inverse",
+    )
+    m3.metric(
+        "Νέα Ενεργειακή Φτώχεια",
+        f"{sim_cold:.1f}%",
+        f"{sim_cold - base_cold:.1f} π.μ.",
+        delta_color="inverse",
+    )
+
+    comp_df = pd.DataFrame({
+        "Σενάριο": [
+            f"{selected_country} (Τρέχον)",
+            f"{selected_country} (Μετά τις Παρεμβάσεις)",
+            "Μέσος Όρος EU Balkans",
+        ],
+        "Κατά Κεφαλήν ΑΕΠ (USD)": [base_gdp, sim_gdp_net, 18405],
+        "Ενεργειακή Φτώχεια (%)": [base_cold, sim_cold, 13.1],
+    })
+    fig_sim = px.bar(
+        comp_df,
+        x="Σενάριο",
+        y="Κατά Κεφαλήν ΑΕΠ (USD)",
+        color="Σενάριο",
+        text_auto=",.0f",
+        color_discrete_sequence=["#dc2626", "#16a34a", "#2563eb"],
+        title=(
+            f"Τροχιά Σύγκλισης: {selected_country} (συνυπολογίζοντας CBAM"
+            f" {carbon_price} €/t)"
+        ),
+    )
+    fig_sim.update_layout(showlegend=False, height=360)
+    st.plotly_chart(fig_sim, use_container_width=True)
+
+# ==============================================================================
+# TAB 3: ΕΡΓΑΣΤΗΡΙΟ AI & ΕΡΜΗΝΕΥΣΙΜΟΤΗΤΑ SHAP
+# ==============================================================================
+with tab3:
+  st.subheader("Εργαστήριο Μηχανικής Μάθησης (Hyperparameter Tuning & SHAP)")
+  c_param, c_shap = st.columns([1, 2])
+
+  with c_param:
+    n_trees = st.slider("Πλήθος Δέντρων Random Forest:", 50, 500, 200, 50)
+    ridge_alpha = st.slider(
+        "Παράμετρος Ομαλοποίησης Ridge (α):", 0.1, 10.0, 1.5, 0.1
+    )
+    country_shap = st.selectbox(
+        "Χώρα για Ερμηνευσιμότητα SHAP:", df["Χώρα"].tolist(), index=10
+    )
+
+  features = [
+      "Energy_kWh",
+      "Coal_Share",
+      "Cold_Homes",
+      "Poor_Owners",
+      "Energy_Intensity",
+  ]
+  X = df[features]
+  y = df["GDP_pc"]
+
+  rf_model = RandomForestRegressor(n_estimators=n_trees, random_state=42).fit(
+      X, y
+  )
+  ridge_model = make_pipeline(StandardScaler(), Ridge(alpha=ridge_alpha)).fit(
+      X, np.log(y)
+  )
+
+  idx = df[df["Χώρα"] == country_shap].index[0]
+  pred_rf = rf_model.predict(X.iloc[[idx]])[0]
+  pred_ridge = np.exp(ridge_model.predict(X.iloc[[idx]])[0])
+
+  with c_param:
+    st.metric("Πραγματικό ΑΕΠ", f"{y.iloc[idx]:,.0f} USD")
+    st.metric(
+        "Πρόβλεψη Random Forest",
+        f"{pred_rf:,.0f} USD",
+        f"Σφάλμα: {pred_rf - y.iloc[idx]:+,.0f}",
+    )
+    st.metric(
+        "Πρόβλεψη Log-Ridge",
+        f"{pred_ridge:,.0f} USD",
+        f"Σφάλμα: {pred_ridge - y.iloc[idx]:+,.0f}",
+    )
+
+  with c_shap:
+    greek_labels = {
+        "Poor_Owners": "Φτωχοί Ιδιοκτήτες (%)",
+        "Cold_Homes": "Αδυναμία Θέρμανσης (%)",
+        "Energy_kWh": "Ενέργεια/κάτοικο (kWh)",
+        "Coal_Share": "Μερίδιο Άνθρακα (%)",
+        "Energy_Intensity": "Ενεργειακή Ένταση (MJ/$)",
+    }
+    contributions = []
+    for feat in features:
+      X_temp = X.copy()
+      X_temp[feat] = X[feat].mean()
+      diff = (
+          rf_model.predict(X.iloc[[idx]])[0]
+          - rf_model.predict(X_temp.iloc[[idx]])[0]
+      )
+      contributions.append(
+          {"Μεταβλητή": greek_labels[feat], "Συνεισφορά SHAP (USD)": diff}
+      )
+
+    shap_df = pd.DataFrame(contributions).sort_values("Συνεισφορά SHAP (USD)")
+    fig_shap = px.bar(
+        shap_df,
+        x="Συνεισφορά SHAP (USD)",
+        y="Μεταβλητή",
+        orientation="h",
+        color="Συνεισφορά SHAP (USD)",
+        color_continuous_scale=["#dc2626", "#f1f5f9", "#16a34a"],
+        title=f"Αποσύνθεση Πρόβλεψης SHAP για: {country_shap}",
+    )
+    fig_shap.update_layout(height=400)
+    st.plotly_chart(fig_shap, use_container_width=True)
+
+# ==============================================================================
+# TAB 4: ΑΓΟΡΑ SEEPEX & ISOLATION FOREST ANOMALY DETECTION
+# ==============================================================================
+with tab4:
+  st.subheader("Διαδραστικός Ανιχνευτής Ανωμαλιών SEEPEX (Isolation Forest)")
+  col_s1, col_s2 = st.columns([1, 2.5])
+
+  with col_s1:
+    contam = st.slider(
+        "Ευαισθησία Isolation Forest (Contamination %):", 1.0, 10.0, 3.5, 0.5
+    )
+    crisis_shock = st.slider(
+        "Ένταση Βραδινών Αιχμών (18:00–21:00):", 1.0, 2.5, 1.5, 0.1
+    )
+
+  np.random.seed(42)
+  hours = np.arange(168)
+  hod = hours % 24
+  prices = (
+      85
+      + 25 * np.sin((hod - 7) * np.pi / 12)
+      + np.random.normal(0, 8, 168)
+  )
+  spike_idx = [19, 20, 43, 68, 91, 92, 116, 140, 163]
+  prices[spike_idx] = prices[spike_idx] * (2.2 * crisis_shock)
+
+  iso = IsolationForest(contamination=contam / 100.0, random_state=42)
+  preds = iso.fit_predict(prices.reshape(-1, 1))
+  is_anomaly = preds == -1
+
+  with col_s1:
+    st.metric(
+        "Εντοπισμένα Price Spikes",
+        f"{is_anomaly.sum()} ώρες",
+        f"Από {len(prices)} ώρες εβδομάδας",
+    )
+    st.metric(
+        "Μέση Τιμή Ανωμαλιών",
+        f"{prices[is_anomaly].mean():.2f} €/MWh",
+        delta_color="inverse",
+    )
+    st.metric("Μέγιστη Ωριαία Αιχμή", f"{prices.max():.2f} €/MWh")
+
+  with col_s2:
+    df_seepex = pd.DataFrame({
+        "Ώρα": hours,
+        "Τιμή (€/MWh)": prices,
+        "Κατάσταση": np.where(
+            is_anomaly, "Price Spike (Ανωμαλία)", "Κανονική Λειτουργία"
+        ),
+    })
+    fig_sp = px.scatter(
+        df_seepex,
+        x="Ώρα",
+        y="Τιμή (€/MWh)",
+        color="Κατάσταση",
+        color_discrete_map={
+            "Κανονική Λειτουργία": "#2563eb",
+            "Price Spike (Ανωμαλία)": "#dc2626",
+        },
+        title=(
+            f"Isolation Forest (contamination = {contam}%) — Ανίχνευση"
+            " Ακραίων Τιμών SEEPEX"
+        ),
+    )
+    fig_sp.add_trace(
+        go.Scatter(
+            x=df_seepex["Ώρα"],
+            y=df_seepex["Τιμή (€/MWh)"],
+            mode="lines",
+            line=dict(color="gray", width=1),
+            showlegend=False,
+        )
+    )
+    fig_sp.update_layout(height=400)
+    st.plotly_chart(fig_sp, use_container_width=True)
+
+# ==============================================================================
+# TAB 5: LIVE SQL ENGINE & ΕΞΑΓΩΓΗ ΔΕΔΟΜΕΝΩΝ
+# ==============================================================================
+with tab5:
+  st.subheader("Εκτέλεση Ερωτημάτων SQL σε Πραγματικό Χρόνο (In-Memory SQLite)")
+  conn = sqlite3.connect(":memory:")
+  df.to_sql("balkan_master_panel", conn, index=False, if_exists="replace")
+
+  preset_queries = {
+      "1. Σύγκριση Μέσων Όρων EU vs Non-EU Balkans": (
+          "SELECT Ομάδα, COUNT(*) AS Χώρες, ROUND(AVG(GDP_pc), 1) AS"
+          " Μέσο_ΑΕΠ, ROUND(AVG(Cold_Homes), 2) AS Ενεργειακή_Φτώχεια,"
+          " ROUND(AVG(Grid_Loss), 2) AS Απώλειες_Δικτύου FROM"
+          " balkan_master_panel GROUP BY Ομάδα;"
+      ),
+      "2. Χώρες Υψηλού Κινδύνου CBAM & Φτώχειας": (
+          "SELECT ISO3, Χώρα, Coal_Share AS Άνθρακας_Pct, Cold_Homes AS"
+          " Αδυναμία_Θέρμανσης, Poor_Owners AS Φτωχοί_Ιδιοκτήτες FROM"
+          " balkan_master_panel WHERE Cold_Homes > 18 ORDER BY Cold_Homes DESC;"
+      ),
+      "3. Όλος ο Πίνακας Δεδομένων (balkan_master_panel)": (
+          "SELECT * FROM balkan_master_panel;"
+      ),
+  }
+
+  selected_preset = st.selectbox(
+      "Επιλέξτε έτοιμο ερώτημα SQL ή τροποποιήστε το παρακάτω:",
+      list(preset_queries.keys()),
+  )
+  sql_input = st.text_area(
+      "Κώδικας SQL:", value=preset_queries[selected_preset], height=100
+  )
+
+  if st.button("▶️ Εκτέλεση SQL Query"):
+    try:
+      res_sql = pd.read_sql_query(sql_input, conn)
+      st.dataframe(res_sql, use_container_width=True)
+      csv_bytes = res_sql.to_csv(index=False).encode("utf-8-sig")
+      st.download_button(
+          "📥 Κατέβασμα Αποτελεσμάτων (CSV)",
+          data=csv_bytes,
+          file_name="balkan_sql_export.csv",
+          mime="text/csv",
+      )
+    except Exception as e:
+      st.error(f"Σφάλμα σύνταξης SQL: {e}")
