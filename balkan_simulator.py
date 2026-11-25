@@ -76,4 +76,4 @@ with tab1:
     col_ctrl, col_res = st.columns([1, 2])
 
     with col_ctrl:
-        selected_country = st.selectbox("Επιλογή Χώρας
+selected_country = st.selectbox("Επιλογή Χώρας:", df["Χώρα"].tolist(), index=9)
