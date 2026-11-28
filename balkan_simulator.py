@@ -236,13 +236,14 @@ k4.metric(
 )
 
 # 5 Πλήρεις Διαδραστικές Καρτέλες
-tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
     "1. Μακροοικονομική & Ενεργειακή Σύγκλιση",
     "2. Ενεργειακή Φτώχεια & Ιδιοκατοίκηση",
     "3. Χονδρεμπορική Αγορά SEEPEX & Ανωμαλίες",
     "4. Πρόβλεψη 5 Ημερών (XGBoost / MLP / SHAP)",
     "5. Προσομοιωτής Πολιτικής & Smart Grids",
     "6. Λογιστική & Χρηματοοικονομική Ανάλυση (Financial BI)",
+    "7. Data Engineering Lab (Live SQL & ETL Telemetry)",
 ])
 
 # ==============================================================================
@@ -855,3 +856,257 @@ with tab6:
       ],
   })
   st.dataframe(pnl_df, use_container_width=True, hide_index=True)
+
+# ==============================================================================
+# TAB 7: DATA ENGINEERING LAB (LIVE SQL CONSOLE, PARQUET EXPORT & TELEMETRY)
+# ==============================================================================
+with tab7:
+  st.subheader(
+      "Εργαστήριο Data Engineering: Ζωντανή Εκτέλεση SQL, Εξαγωγή Parquet &"
+      " Τηλεμετρία"
+  )
+  st.markdown(
+      "Αλληλεπιδράστε απευθείας με τον σχεσιακό/στηλοειδή πυρήνα δεδομένων της"
+      " έρευνας μέσω ενσωματωμένης μηχανής **SQLite / OLAP**."
+  )
+
+  import io
+  import sqlite3
+  import time
+  import plotly.graph_objects as go
+
+  # 1. Δημιουργία ενδομνημονικής βάσης SQLite (In-Memory Relational Engine)
+  conn = sqlite3.connect(":memory:")
+
+  # Αν υπάρχει ήδη το DataFrame df_panel στο app σου, το περνάμε στη SQLite.
+  # Αλλιώς δημιουργούμε ένα αντιπροσωπευτικό δείγμα για να δουλεύει πάντα χωρίς σφάλμα:
+  if "df_panel" in locals() or "df_panel" in globals():
+    df_sql_source = df_panel.copy()
+  else:
+    df_sql_source = pd.DataFrame({
+        "iso3": [
+            "GRC",
+            "HRV",
+            "ROU",
+            "BGR",
+            "SRB",
+            "MNE",
+            "BIH",
+            "MKD",
+            "ALB",
+            "XKX",
+        ],
+        "country_name": [
+            "Ελλάδα",
+            "Κροατία",
+            "Ρουμανία",
+            "Βουλγαρία",
+            "Σερβία",
+            "Μαυροβούνιο",
+            "Βοσνία-Ερζ.",
+            "Β. Μακεδονία",
+            "Αλβανία",
+            "Κόσοβο",
+        ],
+        "region_group": [
+            "EU Balkans",
+            "EU Balkans",
+            "EU Balkans",
+            "EU Balkans",
+            "Non-EU Balkans",
+            "Non-EU Balkans",
+            "Non-EU Balkans",
+            "Non-EU Balkans",
+            "Non-EU Balkans",
+            "Non-EU Balkans",
+        ],
+        "year": [2023] * 10,
+        "gdp_pc_unified": [
+            22990,
+            21460,
+            18410,
+            15790,
+            11360,
+            11330,
+            8420,
+            7680,
+            8360,
+            5940,
+        ],
+        "grid_loss_pct": [
+            6.8,
+            7.4,
+            9.1,
+            8.5,
+            11.9,
+            12.8,
+            10.4,
+            13.2,
+            17.6,
+            18.4,
+        ],
+        "unable_to_keep_warm_pct": [
+            19.2,
+            7.0,
+            15.2,
+            20.7,
+            14.8,
+            16.5,
+            24.1,
+            30.4,
+            35.8,
+            40.2,
+        ],
+    })
+
+  df_sql_source.to_sql(
+      "balkan_master_panel", conn, index=False, if_exists="replace"
+  )
+
+  # 2. Προεπιλεγμένα Ερωτήματα SQL (Presets) για άμεση επίδειξη
+  st.markdown("#### 1. Διαδραστική Κονσόλα Ερωτημάτων SQL (Live Query Execution)")
+  preset_queries = {
+      "Κανόνας Προτεραιότητας Smart Grids & PERCENT_RANK()": """SELECT 
+    iso3 AS "Κωδικός",
+    country_name AS "Χώρα",
+    region_group AS "Θεσμική_Ομάδα",
+    ROUND(gdp_pc_unified, 0) AS "ΑΕΠ_per_Capita",
+    ROUND(grid_loss_pct, 1) AS "Απώλειες_Δικτύου_Pct",
+    ROUND(100.0 * PERCENT_RANK() OVER (ORDER BY gdp_pc_unified), 1) AS "Εκατοστημόριο_ΑΕΠ",
+    CASE 
+        WHEN grid_loss_pct > 14.0 AND gdp_pc_unified < 8000 THEN 'Προτεραιότητα Smart Grids'
+        ELSE 'Εκτός κριτηρίου'
+    END AS "Στρατηγική_Απόφαση"
+FROM balkan_master_panel
+WHERE year = 2023
+ORDER BY gdp_pc_unified DESC;""",
+      "Συγκεντρωτική Ανάλυση Ομάδων (GROUP BY & Aggregations)": """SELECT 
+    region_group AS "Θεσμική_Ομάδα",
+    COUNT(DISTINCT iso3) AS "Πλήθος_Χωρών",
+    ROUND(AVG(gdp_pc_unified), 1) AS "Μέσο_ΑΕΠ_USD",
+    ROUND(AVG(grid_loss_pct), 2) AS "Μέσες_Απώλειες_Pct",
+    ROUND(AVG(unable_to_keep_warm_pct), 2) AS "Μέση_Ενεργ_Φτώχεια_Pct"
+FROM balkan_master_panel
+GROUP BY region_group;""",
+  }
+
+  selected_preset = st.selectbox(
+      "Επιλέξτε έτοιμο αναλυτικό ερώτημα ή τροποποιήστε τον κώδικα παρακάτω:",
+      list(preset_queries.keys()),
+  )
+  user_sql = st.text_area(
+      "Επεξεργαστής SQL (SQLite Engine):",
+      value=preset_queries[selected_preset],
+      height=210,
+  )
+
+  if st.button("▶ Εκτέλεση Ερωτήματος SQL", type="primary"):
+    try:
+      t_start = time.perf_counter()
+      sql_result_df = pd.read_sql_query(user_sql, conn)
+      elapsed_ms = (time.perf_counter() - t_start) * 1000.0
+
+      # Μετρικές Τηλεμετρίας (Query Telemetry)
+      m1, m2, m3 = st.columns(3)
+      m1.metric("Χρόνος Εκτέλεσης (Latency)", f"{elapsed_ms:.2f} ms")
+      m2.metric("Επιστρεφόμενες Εγγραφές", f"{len(sql_result_df)} γραμμές")
+      m3.metric(
+          "Μέγεθος στη Μνήμη (RAM)",
+          f"{sql_result_df.memory_usage(deep=True).sum() / 1024:.2f} KB",
+      )
+
+      st.dataframe(sql_result_df, use_container_width=True, hide_index=True)
+
+      # 3. Κουμπιά Εξαγωγής Δεδομένων (CSV & Apache Parquet)
+      st.markdown("#### 2. Εξαγωγή Αποτελεσμάτων (Data Pipeline Export)")
+      exp_col1, exp_col2 = st.columns(2)
+
+      with exp_col1:
+        csv_bytes = sql_result_df.to_csv(index=False).encode("utf-8-sig")
+        st.download_button(
+            label="📥 Λήψη Αποτελεσμάτων σε CSV (UTF-8)",
+            data=csv_bytes,
+            file_name="balkan_sql_query_output.csv",
+            mime="text/csv",
+        )
+
+      with exp_col2:
+        parquet_buffer = io.BytesIO()
+        sql_result_df.to_parquet(parquet_buffer, index=False)
+        st.download_button(
+            label="⚡ Λήψη σε Στηλοειδές Apache Parquet",
+            data=parquet_buffer.getvalue(),
+            file_name="balkan_sql_query_output.parquet",
+            mime="application/octet-stream",
+        )
+
+    except Exception as e:
+      st.error(f"Σφάλμα σύνταξης SQL: {e}")
+
+  st.markdown("---")
+
+  # 4. Διαδραστικό Feature Engineering: Κυκλική Κωδικοποίηση Ώρας (sin/cos)
+  st.markdown(
+      "#### 3. Προσομοίωση Feature Engineering: Κυκλική Κωδικοποίηση Χρόνου"
+      " (Cyclical Encoding)"
+  )
+  selected_hour = st.slider(
+      "Επιλέξτε Ώρα Ημέρας (00:00 - 23:00) για προβολή στον μοναδιαίο κύκλο:",
+      0,
+      23,
+      19,
+  )
+
+  hours_arr = np.arange(0, 24)
+  sin_vals = np.sin(2 * np.pi * hours_arr / 24.0)
+  cos_vals = np.cos(2 * np.pi * hours_arr / 24.0)
+
+  sel_sin = np.sin(2 * np.pi * selected_hour / 24.0)
+  sel_cos = np.cos(2 * np.pi * selected_hour / 24.0)
+
+  fe_c1, fe_c2 = st.columns([1.3, 1])
+  with fe_c1:
+    fig_clock = go.Figure()
+    fig_clock.add_trace(
+        go.Scatter(
+            x=cos_vals,
+            y=sin_vals,
+            mode="markers+text",
+            text=[f"{h:02d}h" for h in hours_arr],
+            textposition="top center",
+            marker=dict(size=9, color="#3b82f6"),
+            name="Όλες οι Ώρες",
+        )
+    )
+    fig_clock.add_trace(
+        go.Scatter(
+            x=[sel_cos],
+            y=[sel_sin],
+            mode="markers",
+            marker=dict(size=18, color="#dc2626", symbol="diamond"),
+            name=f"Επιλεγμένη Ώρα ({selected_hour:02d}:00)",
+        )
+    )
+    fig_clock.update_layout(
+        title=(
+            f"Κυκλική Προβολή Ώρας {selected_hour:02d}:00 (sin={sel_sin:.2f},"
+            f" cos={sel_cos:.2f})"
+        ),
+        xaxis_title="cos(2π·h / 24)",
+        yaxis_title="sin(2π·h / 24)",
+        xaxis=dict(range=[-1.35, 1.35], zeroline=True),
+        yaxis=dict(range=[-1.35, 1.35], zeroline=True, scaleanchor="x"),
+        height=400,
+        margin=dict(l=20, r=20, t=45, b=20),
+    )
+    st.plotly_chart(fig_clock, use_container_width=True)
+
+  with fe_c2:
+    st.info(
+        f"**Γιατί χρησιμοποιούμε $\sin/\cos$ αντί για απλό αριθμό `{selected_hour}`:**\n\n"
+        "• Αν δώσουμε στο Νευρωνικό Δίκτυο (`MLP`) τους αριθμούς `23` και `0`, θα νομίζει ότι απέχουν μέγιστα μεταξύ τους.\n\n"
+        f"• Με τον τριγωνομετρικό μετασχηματισμό, η ώρα **{selected_hour:02d}:00** μετατρέπεται στο ζεύγος συντεταγμένων:\n"
+        f"  - $\\text{{Hour}}_{{\\sin}} = {sel_sin:.4f}$\n"
+        f"  - $\\text{{Hour}}_{{\\cos}} = {sel_cos:.4f}$\n\n"
+        "• Έτσι διατηρείται η φυσική γειτνίαση της βραδινής αιχμής (`18:00 - 21:00`) και της αλλαγής ημέρας (`23:00 -> 00:00`)."
+    )
