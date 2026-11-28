@@ -236,12 +236,13 @@ k4.metric(
 )
 
 # 5 Πλήρεις Διαδραστικές Καρτέλες
-tab1, tab2, tab3, tab4, tab5 = st.tabs([
-    "🗺️ Γεωχωρικός Χάρτης & Δείκτες",
-    "🎛️ Προσομοιωτής Πολιτικής (What-If)",
-    "🧠 Εργαστήριο AI & SHAP",
-    "📈 SEEPEX & Isolation Forest",
-    "🗄️ Live SQL & Εξαγωγή",
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs([
+    "1. Μακροοικονομική & Ενεργειακή Σύγκλιση",
+    "2. Ενεργειακή Φτώχεια & Ιδιοκατοίκηση",
+    "3. Χονδρεμπορική Αγορά SEEPEX & Ανωμαλίες",
+    "4. Πρόβλεψη 5 Ημερών (XGBoost / MLP / SHAP)",
+    "5. Προσομοιωτής Πολιτικής & Smart Grids",
+    "6. Λογιστική & Χρηματοοικονομική Ανάλυση (Financial BI)",
 ])
 
 # ==============================================================================
@@ -596,3 +597,261 @@ with tab5:
       )
     except Exception as e:
       st.error(f"Σφάλμα σύνταξης SQL: {e}")
+
+# ==============================================================================
+# TAB 6: FINANCIAL & CARBON ACCOUNTING BI (ΛΟΓΙΣΤΙΚΗ & ΧΡΗΜΑΤΟΟΙΚΟΝΟΜΙΚΑ)
+# ==============================================================================
+with tab6:
+  st.subheader(
+      "Λογιστική Αποτίμηση Κόστους Άνθρακα (CBAM), Απωλειών Δικτύου & Αξιολόγηση"
+      " CAPEX"
+  )
+  st.markdown(
+      "Μετασχηματισμός τεχνικών ενεργειακών δεικτών σε λογιστικά μεγέθη "
+      "**Κατάστασης Αποτελεσμάτων Χρήσης (P&L)**, **Περιθωρίου EBITDA** και "
+      "**Καθαρής Παρούσας Αξίας (NPV / Payback Period)**."
+  )
+
+  # --- Πλαϊνές / Επάνω Παράμετροι Λογιστικής Προσομοίωσης ---
+  col_p1, col_p2, col_p3, col_p4 = st.columns(4)
+  with col_p1:
+    selected_country_fin = st.selectbox(
+        "Επιλογή Χώρας / Αγοράς:",
+        [
+            "Σερβία (SRB)",
+            "Βοσνία-Ερζεγοβίνη (BIH)",
+            "Κόσοβο (XKX)",
+            "Βόρεια Μακεδονία (MKD)",
+            "Αλβανία (ALB)",
+        ],
+        index=0,
+        key="fin_country",
+    )
+  with col_p2:
+    carbon_price_eur = st.slider(
+        "Τιμή Δικαιωμάτων CO₂ CBAM (€/t):",
+        min_value=40,
+        max_value=130,
+        value=85,
+        step=5,
+        key="fin_cbam",
+    )
+  with col_p3:
+    capex_invest_meur = st.slider(
+        "Επένδυση CAPEX Smart Grids / FTTH (Εκ. €):",
+        min_value=40,
+        max_value=250,
+        value=120,
+        step=10,
+        key="fin_capex",
+    )
+  with col_p4:
+    wacc_rate = st.slider(
+        "Προεξοφλητικό Επιτόκιο WACC (%):",
+        min_value=4.0,
+        max_value=12.0,
+        value=7.5,
+        step=0.5,
+        key="fin_wacc",
+    )
+
+  # --- Βασικά Δεδομένα Αναφοράς ανά Χώρα (Εκπομπές CO2 в Mt, Απώλειες σε GWh, Τιμή €/MWh, Βασικά Έσοδα Εκ. €) ---
+  country_fin_params = {
+      "Σερβία (SRB)": {
+          "co2_mt": 4.82,
+          "loss_gwh": 2050,
+          "tariff": 95.0,
+          "base_rev": 2450.0,
+          "base_ebitda_pct": 24.5,
+      },
+      "Βοσνία-Ερζεγοβίνη (BIH)": {
+          "co2_mt": 3.12,
+          "loss_gwh": 1160,
+          "tariff": 94.8,
+          "base_rev": 1520.0,
+          "base_ebitda_pct": 23.0,
+      },
+      "Κόσοβο (XKX)": {
+          "co2_mt": 1.39,
+          "loss_gwh": 930,
+          "tariff": 94.6,
+          "base_rev": 680.0,
+          "base_ebitda_pct": 19.5,
+      },
+      "Βόρεια Μακεδονία (MKD)": {
+          "co2_mt": 1.12,
+          "loss_gwh": 760,
+          "tariff": 94.7,
+          "base_rev": 740.0,
+          "base_ebitda_pct": 21.0,
+      },
+      "Αλβανία (ALB)": {
+          "co2_mt": 0.05,
+          "loss_gwh": 970,
+          "tariff": 94.8,
+          "base_rev": 890.0,
+          "base_ebitda_pct": 28.0,
+      },
+  }
+
+  p = country_fin_params[selected_country_fin]
+
+  # --- Λογιστικοί Υπολογισμοί P&L, EBITDA & NPV ---
+  cbam_liability_meur = p["co2_mt"] * carbon_price_eur
+  grid_loss_cost_meur = (p["loss_gwh"] * p["tariff"]) / 1000.0  # σε Εκατ. €
+
+  base_ebitda_meur = p["base_rev"] * (p["base_ebitda_pct"] / 100.0)
+  post_cbam_ebitda_meur = max(base_ebitda_meur - cbam_liability_meur, 0.0)
+  post_cbam_ebitda_pct = (post_cbam_ebitda_meur / p["base_rev"]) * 100.0
+
+  # Εξοικονόμηση από μείωση απωλειών δικτύου κατά 45% μέσω Smart Grids + FTTH/PTP
+  annual_cash_inflow_meur = grid_loss_cost_meur * 0.45
+  payback_years = (
+      capex_invest_meur / annual_cash_inflow_meur
+      if annual_cash_inflow_meur > 0
+      else 99.9
+  )
+
+  # Υπολογισμός 8ετούς Καθαρής Παρούσας Αξίας (NPV)
+  r = wacc_rate / 100.0
+  years_horizon = np.arange(1, 9)
+  discounted_cf = [annual_cash_inflow_meur / ((1 + r) ** t) for t in years_horizon]
+  npv_8yr_meur = sum(discounted_cf) - capex_invest_meur
+
+  # --- Εμφάνιση KPI Cards ---
+  st.markdown("---")
+  k1, k2, k3, k4 = st.columns(4)
+  k1.metric(
+      label="Ετήσια Επιβάρυνση CBAM (COGS)",
+      value=f"{cbam_liability_meur:.1f} Εκ. €",
+      delta=f"-{(cbam_liability_meur/p['base_rev'])*100:.1f}% επί Εσόδων",
+      delta_color="inverse",
+  )
+  k2.metric(
+      label="Λογιστική Ζημία Απωλειών Δικτύου",
+      value=f"{grid_loss_cost_meur:.1f} Εκ. €",
+      delta=f"Ανάκτηση: +{annual_cash_inflow_meur:.1f} Εκ. €/έτος",
+  )
+  k3.metric(
+      label="Περιθώριο EBITDA (Μετά CBAM)",
+      value=f"{post_cbam_ebitda_pct:.1f}%",
+      delta=f"{post_cbam_ebitda_pct - p['base_ebitda_pct']:.1f} ποσ. μονάδες",
+      delta_color="normal",
+  )
+  k4.metric(
+      label="Απόσβεση (Payback) & NPV 8ετίας",
+      value=f"{payback_years:.1f} Έτη",
+      delta=f"NPV: {npv_8yr_meur:+.1f} Εκ. €",
+  )
+
+  st.markdown("---")
+
+  # --- Γραφήματα Χρηματοοικονομικής Ανάλυσης (2 Στήλες) ---
+  import plotly.graph_objects as go
+
+  g_col1, g_col2 = st.columns(2)
+
+  with g_col1:
+    # Γράφημα 1: Σωρευτικές Ταμειακές Ροές (Cumulative Cash Flow & Payback Point)
+    yrs = list(range(0, 9))
+    cum_cf = [-capex_invest_meur]
+    for y in range(1, 9):
+      cum_cf.append(cum_cf[-1] + annual_cash_inflow_meur)
+
+    bar_colors = ["#dc2626" if val < 0 else "#16a34a" for val in cum_cf]
+    fig_cf = go.Figure(
+        data=[
+            go.Bar(
+                x=[f"Έτος {y}" for y in yrs],
+                y=cum_cf,
+                marker_color=bar_colors,
+                text=[f"{val:+.1f}M" for val in cum_cf],
+                textposition="outside",
+            )
+        ]
+    )
+    fig_cf.add_hline(y=0, line_width=1.5, line_color="#0f172a")
+    fig_cf.update_layout(
+        title=(
+            f"Σωρευτικές Ταμειακές Ροές CAPEX (Payback: {payback_years:.1f}"
+            " Έτη)"
+        ),
+        yaxis_title="Εκατομμύρια Ευρώ (Εκ. €)",
+        height=390,
+        margin=dict(l=20, r=20, t=45, b=20),
+    )
+    st.plotly_chart(fig_cf, use_container_width=True)
+
+  with g_col2:
+    # Γράφημα 2: Σύγκριση Περιθωρίου EBITDA ανά Στρατηγικό Σενάριο
+    modernized_ebitda_pct = (
+        (base_ebitda_meur + annual_cash_inflow_meur - (cbam_liability_meur * 0.25))
+        / p["base_rev"]
+    ) * 100.0
+    fig_ebitda = go.Figure(
+        data=[
+            go.Bar(
+                x=[
+                    "1. Βασικό Σενάριο",
+                    "2. Πλήρης CBAM (Χωρίς Έργα)",
+                    "3. Εκσυγχρονισμός (ΑΠΕ + Smart Grids)",
+                ],
+                y=[
+                    p["base_ebitda_pct"],
+                    post_cbam_ebitda_pct,
+                    modernized_ebitda_pct,
+                ],
+                marker_color=["#0284c7", "#dc2626", "#16a34a"],
+                text=[
+                    f"{p['base_ebitda_pct']:.1f}%",
+                    f"{post_cbam_ebitda_pct:.1f}%",
+                    f"{modernized_ebitda_pct:.1f}%",
+                ],
+                textposition="outside",
+            )
+        ]
+    )
+    fig_ebitda.update_layout(
+        title="Επίδραση στο Λειτουργικό Περιθώριο Κερδοφορίας (EBITDA %)",
+        yaxis_title="Περιθώριο EBITDA (%)",
+        yaxis_range=[0, max(modernized_ebitda_pct + 8, 38)],
+        height=390,
+        margin=dict(l=20, r=20, t=45, b=20),
+    )
+    st.plotly_chart(fig_ebitda, use_container_width=True)
+
+  # --- Συνοπτικός Λογιστικός Πίνακας P&L (Statement of Profit or Loss) ---
+  st.markdown("#### Συνοπτική Κατάσταση Αποτελεσμάτων Χρήσης (Pro-Forma P&L — Εκ. €)")
+  pnl_df = pd.DataFrame({
+      "Λογιστικό Κονδύλι (Pro-Forma P&L)": [
+          "Κύκλος Εργασιών (Έσοδα Πώλησης Ενέργειας)",
+          "(-) Λογιστική Ζημία Απωλειών Δικτύου (Revenue Leakage)",
+          "(-) Φορολογική Επιβάρυνση Άνθρακα (CBAM Liability)",
+          "(=) Λειτουργικά Κέρδη (EBITDA)",
+          "Περιθώριο Λειτουργικής Κερδοφορίας (EBITDA Margin %)",
+      ],
+      "Βασικό Σενάριο (Χωρίς CBAM)": [
+          f"{p['base_rev']:,.1f} €",
+          f"-{grid_loss_cost_meur:,.1f} €",
+          "0.0 €",
+          f"{base_ebitda_meur:,.1f} €",
+          f"{p['base_ebitda_pct']:.1f}%",
+      ],
+      "Σενάριο CBAM (Χωρίς Επενδύσεις)": [
+          f"{p['base_rev']:,.1f} €",
+          f"-{grid_loss_cost_meur:,.1f} €",
+          f"-{cbam_liability_meur:,.1f} €",
+          f"{post_cbam_ebitda_meur:,.1f} €",
+          f"{post_cbam_ebitda_pct:.1f}%",
+      ],
+      "Σενάριο Εκσυγχρονισμού (ΑΠΕ + Smart Grids/FTTH)": [
+          f"{p['base_rev']:,.1f} €",
+          f"-{grid_loss_cost_meur * 0.55:,.1f} €",
+          f"-{cbam_liability_meur * 0.25:,.1f} €",
+          (
+              f"{base_ebitda_meur + annual_cash_inflow_meur - (cbam_liability_meur * 0.25):,.1f} €"
+          ),
+          f"{modernized_ebitda_pct:.1f}%",
+      ],
+  })
+  st.dataframe(pnl_df, use_container_width=True, hide_index=True)
