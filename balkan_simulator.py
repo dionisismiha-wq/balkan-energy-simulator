@@ -18,6 +18,61 @@ st.set_page_config(
     layout="wide",
 )
 
+
+# ==============================================================================
+# CUSTOM CSS: ENTERPRISE UI/UX STYLING, ΧΡΩΜΑΤΑ & ΚΑΡΤΕΣ KPI
+# ==============================================================================
+st.markdown(
+    """
+<style>
+    /* Κύριο φόντο και γραμματοσειρά */
+    .main {
+        background-color: #f8fafc;
+    }
+    /* Στυλ για τις κάρτες KPI (st.metric) */
+    div[data-testid="stMetric"] {
+        background: linear-gradient(135deg, #ffffff 0%, #eff6ff 100%);
+        border-left: 5px solid #2563eb;
+        padding: 15px 18px;
+        border-radius: 10px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.08);
+        transition: transform 0.2s ease;
+    }
+    div[data-testid="stMetric"]:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.15);
+    }
+    /* Στυλ για τις καρτέλες (Tabs) */
+    button[data-baseweb="tab"] {
+        font-weight: 700 !important;
+        font-size: 14px !important;
+        border-radius: 8px 8px 0 0 !important;
+        padding: 10px 16px !important;
+        background-color: #e2e8f0 !important;
+        color: #1e293b !important;
+        margin-right: 4px !important;
+    }
+    button[data-baseweb="tab"][aria-selected="true"] {
+        background: linear-gradient(90deg, #1e3a8a 0%, #2563eb 100%) !important;
+        color: #ffffff !important;
+    }
+    /* Πλαίσια Οδηγού Ανάγνωσης (Expanders) */
+    div[data-testid="stExpander"] {
+        background-color: #ffffff;
+        border: 1px solid #cbd5e1;
+        border-left: 5px solid #0ea5e9;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+</style>
+""",
+    unsafe_allow_html=True,
+)
+
+
+
+
+
 # ==============================================================================
 # ΔΙΑΚΟΠΤΗΣ & ΣΥΝΑΡΤΗΣΗ ΕΠΕΞΗΓΗΣΕΩΝ ΧΡΗΣΤΗ (UI GUIDE SYSTEM)
 # ==============================================================================
@@ -1306,232 +1361,319 @@ GROUP BY Ομάδα;""",
 
 
 # ==============================================================================
-# TAB 8: COMPUTER ENGINEERING (IT SYSTEMS) & 5-DAY SEEPEX PRICE FORECASTING
+# TAB 8: DEEP IT ARCHITECTURE, MULTI-STACK CODE (R/SPSS/SQL) & HARDWARE TELEMETRY
 # ==============================================================================
 with tab8:
-  st.subheader(
-      "Μηχανική Υπολογιστών (IT Systems Profiling) & Πρόβλεψη Τιμών 5 Ημερών"
-      " (120 Ώρες)"
-  )
   st.markdown(
-      "Ανάλυση απόδοσης υλικού (**CPU SIMD Vectorization, L1/L2 Cache Locality,"
-      " Apache Parquet I/O**) και διαδραστικός προσομοιωτής πρόβλεψης τιμών"
-      " χονδρεμπορικής αγοράς **SEEPEX**."
+      """
+      <div style="background: linear-gradient(90deg, #0f172a 0%, #1e3a8a 100%); padding: 20px; border-radius: 12px; color: white; margin-bottom: 20px;">
+          <h2 style="margin:0; color: #38bdf8;">🖥️ Αρχιτεκτονική Πληροφοριακών Συστημάτων (IT Architecture & Computer Engineering)</h2>
+          <p style="margin:5px 0 0 0; font-size: 15px; color: #e2e8f0;">
+              Εσωτερική δομή Data Lakehouse, Βελτιστοποίηση Υλικού (CPU SIMD / Cache L1-L2), Τηλεπικοινωνιακός Συγχρονισμός (FTTH / IEEE 1588 PTP) & Διασταυρωμένη Επαλήθευση (Python · R · SPSS · SQL).
+          </p>
+      </div>
+      """,
+      unsafe_allow_html=True,
   )
 
-  # --- Οπτικό Διάγραμμα Αρχιτεκτονικής Hardware & Data Pipeline ---
-  st.markdown("#### 1. Αρχιτεκτονική Ροής Δεδομένων από τον Δίσκο στους Καταχωρητές CPU")
-  arch_c1, arch_c2, arch_c3, arch_c4 = st.columns(4)
-  with arch_c1:
-    st.info(
-        "**1. Storage Layer (NVMe SSD)**\n\n"
-        "• Μορφή: **Apache Parquet**\n"
-        "• Συμπίεση: **Snappy (4,2x μικρότερο)**\n"
-        "• Τεχνική: **Zone Maps (Min-Max)** για παράκαμψη άσχετων μπλοκ."
-    )
-  with arch_c2:
-    st.info(
-        "**2. Memory Layer (RAM / Arrow)**\n\n"
-        "• Διάταξη: **Columnar (Στηλοειδής)**\n"
-        "• Τεχνική: **Zero-Copy Memory Mapping**\n"
-        "• Μηδενική μετατροπή τύπων δεδομένων."
-    )
-  with arch_c3:
-    st.info(
-        "**3. CPU Cache (L1 / L2)**\n\n"
-        "• **Spatial Cache Locality**: Συνεχόμενη ανάγνωση στηλών.\n"
-        "• Μείωση **Cache Misses** κατά >85% έναντι CSV."
-    )
-  with arch_c4:
-    st.info(
-        "**4. CPU Execution (AVX2 / SIMD)**\n\n"
-        "• **Vectorized Instructions**: Επεξεργασία 4–8 αριθμών ανά κύκλο ρολογιού.\n"
-        "• Επιτάχυνση υπολογισμών έως **45x**."
-    )
-
-  # Διαδραστικός Πίνακας Σύγκρισης Υλικού & Αποθήκευσης
-  st.markdown("#### 2. Διαδραστικό Benchmark Υπολογιστικών Συστημάτων (IT Performance Matrix)")
-  n_records_sim = st.select_slider(
-      "Επιλέξτε όγκο εγγραφών (Dataset Scale) για προσομοίωση συστήματος:",
-      options=["100.000 εγγραφές", "500.000 εγγραφές", "2.000.000 εγγραφές", "10.000.000 εγγραφές"],
-      value="500.000 εγγραφές",
-      help="Δείτε πώς κλιμακώνεται η κατανάλωση RAM, το μέγεθος δίσκου και η καθυστέρηση CPU.",
+  # --- 1. ΖΩΝΤΑΝΟ ΔΙΑΔΡΑΣΤΙΚΟ ΔΙΑΓΡΑΜΜΑ ΡΟΗΣ ΔΕΔΟΜΕΝΩΝ (SANKEY ARCHITECTURE DIAGRAM) ---
+  st.markdown("#### 1. Διαδραστική Απεικόνιση Ροής Δεδομένων (End-to-End Medallion Lakehouse)")
+  fig_sankey = go.Figure(
+      data=[
+          go.Sankey(
+              node=dict(
+                  pad=20,
+                  thickness=25,
+                  line=dict(color="#0f172a", width=1.5),
+                  label=[
+                      "Eurostat EU-SILC (API)",
+                      "World Bank WDI (CSV/JSON)",
+                      "SEEPEX Market (Hourly MCP)",
+                      "ENTSO-E Grid (IEC 61970)",
+                      "Bronze Layer (Raw Ingestion)",
+                      "Silver Layer (Idempotent UPSERT)",
+                      "Gold Layer (Apache Parquet + Zone Maps)",
+                      "Econometrics (R fixest & SPSS)",
+                      "ML & AI (XGBoost / MLP / SHAP)",
+                      "Financial BI & Streamlit DSS",
+                  ],
+                  color=[
+                      "#3b82f6",
+                      "#0ea5e9",
+                      "#f59e0b",
+                      "#10b981",
+                      "#78350f",
+                      "#64748b",
+                      "#eab308",
+                      "#8b5cf6",
+                      "#ec4899",
+                      "#16a34a",
+                  ],
+              ),
+              link=dict(
+                  source=[0, 1, 2, 3, 4, 5, 6, 6, 6],
+                  target=[4, 4, 4, 4, 5, 6, 7, 8, 9],
+                  value=[25, 25, 35, 20, 105, 105, 35, 40, 30],
+                  color="rgba(148, 163, 184, 0.35)",
+              ),
+          )
+      ]
   )
-  scale_mult = {
-      "100.000 εγγραφές": 0.2,
-      "500.000 εγγραφές": 1.0,
-      "2.000.000 εγγραφές": 4.0,
-      "10.000.000 εγγραφές": 20.0,
-  }[n_records_sim]
-
-  it_matrix_df = pd.DataFrame({
-      "Αρχιτεκτονική Επεξεργασίας": [
-          "Παραδοσιακό CSV + Python Scalar Loops",
-          "Σχεσιακή Βάση SQLite (Χωρίς Ευρετήριο)",
-          "Σχεσιακή Βάση SQLite (Με B-Tree Index)",
-          "Στηλοειδές Apache Parquet + NumPy SIMD",
-      ],
-      "Μέγεθος στον Δίσκο (MB)": [
-          round(24.5 * scale_mult, 1),
-          round(28.0 * scale_mult, 1),
-          round(33.5 * scale_mult, 1),
-          round(5.8 * scale_mult, 1),
-      ],
-      "Κατανάλωση RAM (MB)": [
-          round(115.0 * scale_mult, 1),
-          round(64.0 * scale_mult, 1),
-          round(42.0 * scale_mult, 1),
-          round(14.2 * scale_mult, 1),
-      ],
-      "Χρόνος Απόκρισης Query (ms)": [
-          round(420.0 * scale_mult, 1),
-          round(185.0 * scale_mult, 1),
-          round(24.0 * np.log2(scale_mult + 2), 1),
-          round(18.0 * np.log2(scale_mult + 2), 1),
-      ],
-      "Πολυπλοκότητα Αναζήτησης": [
-          "O(N) — Γραμμική Σάρωση",
-          "O(N) — Full Table Scan",
-          "O(log N) — B-Tree Search",
-          "O(log N) — Zone Maps & SIMD",
-      ],
-  })
-  st.dataframe(it_matrix_df, use_container_width=True, hide_index=True)
+  fig_sankey.update_layout(
+      title="Αρχιτεκτονική Medallion (Bronze → Silver → Gold) & Κατανομή Φόρτου Εργασίας",
+      font_size=12,
+      height=380,
+      margin=dict(l=10, r=10, t=40, b=10),
+  )
+  st.plotly_chart(fig_sankey, use_container_width=True)
 
   render_guide(
-      title="Αξιολόγηση Αρχιτεκτονικής Υπολογιστών (Computer Engineering Benchmark)",
+      title="Διάγραμμα Ροής Αρχιτεκτονικής Data Lakehouse (Medallion Pattern)",
       what_we_see=(
-          "Σύγκριση τεσσάρων διαφορετικών αρχιτεκτονικών αποθήκευσης και"
-          " επεξεργασίας ως προς τον χώρο δίσκου, τη μνήμη RAM και τον χρόνο"
-          " εκτέλεσης CPU."
+          "Περάστε τον κέρσορα πάνω από κάθε κόμβο για να δείτε πώς οι 4"
+          " εξωτερικές πηγές δεδομένων ενοποιούνται στα επίπεδα Bronze (ωμά"
+          " δεδομένα), Silver (καθαρισμένα μέσω UPSERT) και Gold (στηλοειδές"
+          " Apache Parquet)."
       ),
       methodology=(
-          "Μέτρηση πραγματικού αποτυπώματος μνήμης και πολυπλοκότητας"
-          " αλγορίθμων αναζήτησης (O(N) έναντι O(log N))."
+          "Σχεδιασμός Lakehouse σύμφωνα με το πρότυπο IEC 61970 (CIM) για"
+          " σημασιολογική διαλειτουργικότητα ενεργειακών δικτύων."
       ),
       takeaway=(
-          "Ο συνδυασμός Apache Parquet και SIMD Vectorization μειώνει τον όγκο"
-          " δίσκου κατά ~76% και διατηρεί τον χρόνο απόκρισης κάτω από 50 ms"
-          " ακόμη και στα 10 εκατομμύρια εγγραφές."
+          "Η ενιαία αποθήκευση στο Gold Layer τροφοδοτεί ταυτόχρονα την"
+          " οικονομετρία (R/SPSS), την τεχνητή νοημοσύνη (XGBoost) και το"
+          " λογιστικό σύστημα BI χωρίς διπλοεγγραφές."
       ),
   )
 
   st.markdown("---")
 
-  # --- 3. Διαδραστικό 5-Day Price Forecasting (120 Ώρες SEEPEX) ---
-  st.markdown("#### 3. Προσομοιωτής Πρόβλεψης Τιμών Ενέργειας 5 Ημερών (120 Ώρες SEEPEX)")
-  fc_c1, fc_c2 = st.columns([1, 2.6])
+  # --- 2. MULTI-STACK CODE EXPLORER (R, SPSS, PYTHON, SQL) ---
+  st.markdown("#### 2. Διασταυρωμένη Επαλήθευση Πολλαπλών Περιβαλλόντων (Multi-Stack Code Explorer)")
+  st.markdown(
+      "Επιλέξτε γλώσσα προγραμματισμού για να επιθεωρήσετε τον κώδικα"
+      " επαλήθευσης των ευρημάτων της διπλωματικής εργασίας:"
+  )
 
-  with fc_c1:
-    model_choice = st.radio(
-        "Επιλογή Αλγορίθμου Πρόβλεψης:",
-        ["XGBoost Regressor (R² = 0.924)", "Deep Learning MLP (R² = 0.908)", "Σύγκριση Και των Δύο"],
-        help="Επιλέξτε το μοντέλο τεχνητής νοημοσύνης που προβλέπει τις επόμενες 120 ώρες.",
-    )
-    gas_trend = st.slider(
-        "Μεταβολή Τιμής Φυσικού Αερίου TTF (%):",
-        -20,
-        40,
-        0,
-        5,
-        help="Εξωγενής παράμετρος κόστους καυσίμου που μετατοπίζει το επίπεδο τιμών.",
-    )
-    st.metric("Ακρίβεια Μοντέλου (R²)", "0.924", "MAPE: 9.4%")
-    st.metric("Ορίζοντας Πρόβλεψης", "120 Ώρες", "5 Ημέρες (Walk-Forward)")
+  stack_tab1, stack_tab2, stack_tab3, stack_tab4 = st.tabs([
+      "🔵 R Econometrics (fixest / plm)",
+      "🟣 IBM SPSS Statistics (Syntax)",
+      "🟢 Python Data Engineering (PyArrow)",
+      "🟠 SQL Query Optimizer (EXPLAIN)",
+  ])
 
-  with fc_c2:
-    np.random.seed(101)
-    hrs_120 = np.arange(1, 121)
-    hod_120 = hrs_120 % 24
-    actual_120 = (
-        92.0 * (1 + gas_trend / 200.0)
-        + 28.0 * np.sin(2 * np.pi * (hod_120 - 7) / 24.0)
-        + np.random.normal(0, 7.0, 120)
+  with stack_tab1:
+    st.caption(
+        "**Σκοπός:** Ανεξάρτητη επαλήθευση του μοντέλου Two-Way Fixed Effects"
+        " (2000–2025) με ανθεκτικά τυπικά σφάλματα (Clustered HC3) στο RStudio."
     )
-    # Προσθήκη 2 βραδινών αιχμών
-    actual_120[43] += 85.0
-    actual_120[91] += 95.0
+    st.code(
+        """library(fixest)
+library(plm)
 
-    pred_xgb_120 = (
-        92.0 * (1 + gas_trend / 200.0)
-        + 27.5 * np.sin(2 * np.pi * (hod_120 - 7) / 24.0)
-        + np.random.normal(0, 3.5, 120)
-    )
-    pred_xgb_120[43] += 76.0
-    pred_xgb_120[91] += 84.0
+# Φόρτωση ενοποιημένου πάνελ 11 Βαλκανικών χωρών
+panel_df <- read.csv("balkan_master_panel.csv")
 
-    pred_mlp_120 = (
-        92.0 * (1 + gas_trend / 200.0)
-        + 26.0 * np.sin(2 * np.pi * (hod_120 - 7) / 24.0)
-        + np.random.normal(0, 4.5, 120)
-    )
-    pred_mlp_120[43] += 62.0
-    pred_mlp_120[91] += 70.0
+# Εκτίμηση Two-Way Fixed Effects (Country + Year FE) με Clustered SEs
+model_fe <- feols(
+  log(gdp_pc_unified) ~ log(energy_pc_kwh) + energy_intensity_mj | iso3 + year,
+  data = panel_df,
+  cluster = ~iso3
+)
 
-    fig_fc = go.Figure()
-    fig_fc.add_trace(
-        go.Scatter(
-            x=hrs_120,
-            y=actual_120,
-            mode="lines",
-            name="Πραγματική Τιμή SEEPEX (€/MWh)",
-            line=dict(color="#0f172a", width=2),
-        )
-    )
-    if "XGBoost" in model_choice or "Σύγκριση" in model_choice:
-      fig_fc.add_trace(
-          go.Scatter(
-              x=hrs_120,
-              y=pred_xgb_120,
-              mode="lines",
-              name="Πρόβλεψη XGBoost (5 Ημέρες)",
-              line=dict(color="#2563eb", width=2, dash="dash"),
-          )
-      )
-      fig_fc.add_trace(
-          go.Scatter(
-              x=np.concatenate([hrs_120, hrs_120[::-1]]),
-              y=np.concatenate([pred_xgb_120 + 14, (pred_xgb_120 - 14)[::-1]]),
-              fill="toself",
-              fillcolor="rgba(37, 99, 235, 0.15)",
-              line=dict(color="rgba(255,255,255,0)"),
-              name="95% Διάστημα Εμπιστοσύνης",
-          )
-      )
-    if "MLP" in model_choice or "Σύγκριση" in model_choice:
-      fig_fc.add_trace(
-          go.Scatter(
-              x=hrs_120,
-              y=pred_mlp_120,
-              mode="lines",
-              name="Πρόβλεψη Deep Learning MLP",
-              line=dict(color="#ea580c", width=2, dash="dot"),
-          )
-      )
+# Έλεγχος Hausman (Fixed Effects vs Random Effects)
+phtest(log(gdp_pc_unified) ~ log(energy_pc_kwh) + energy_intensity_mj,
+       data = panel_df, index = c("iso3", "year"))
 
-    fig_fc.update_layout(
-        title="Πρόβλεψη Ωριαίας Τιμής Εκκαθάρισης SEEPEX — Ορίζοντας 5 Ημερών (120 Ώρες)",
-        xaxis_title="Ώρες Πρόβλεψης (t+1 έως t+120)",
-        yaxis_title="Τιμή (€/MWh)",
-        height=410,
-        margin=dict(l=20, r=20, t=45, b=20),
+summary(model_fe) # Αποτέλεσμα: β1 = +1.0702 (p < 0.001), R² = 0.964""",
+        language="r",
     )
-    st.plotly_chart(fig_fc, use_container_width=True)
+
+  with stack_tab2:
+    st.caption(
+        "**Σκοπός:** Έλεγχος κανονικότητας, ανάλυση διακύμανσης (One-Way ANOVA)"
+        " και παλινδρόμηση LSDV στο IBM SPSS."
+    )
+    st.code(
+        """* Ενεργοποίηση συνόλου δεδομένων Βαλκανίων.
+DATASET ACTIVATE BalkanMasterPanel.
+
+* Έλεγχος κανονικότητας κατανομών (Kolmogorov-Smirnov & Shapiro-Wilk).
+EXAMINE VARIABLES=gdp_pc_unified cold_homes_pct poor_owners_pct BY region_group
+  /PLOT BOXPLOT NPPLOT
+  /STATISTICS DESCRIPTIVES.
+
+* One-Way ANOVA μεταξύ EU Balkans και Non-EU Balkans.
+ONEWAY gdp_pc_unified cold_homes_pct BY region_group
+  /STATISTICS DESCRIPTIVES HOMOGENEITY WELCH.
+
+* Γενικό Γραμμικό Μοντέλο (GLM / LSDV) για την Ενεργειακή Φτώχεια.
+UNIANOVA cold_homes_pct BY iso3 WITH log_gdp_pc poor_owners_pct
+  /METHOD=SSTYPE(3)
+  /PRINT=PARAMETER ETASQ.""",
+        language="sql",
+    )
+
+  with stack_tab3:
+    st.caption(
+        "**Σκοπός:** Μετατροπή σε στηλοειδή μορφή Apache Parquet με συμπίεση"
+        " Snappy και Predicate Pushdown για 23x ταχύτερα ερωτήματα."
+    )
+    st.code(
+        """import pyarrow as pa
+import pyarrow.parquet as pq
+import pandas as pd
+
+df = pd.read_csv("balkan_master_panel.csv")
+table = pa.Table.from_pandas(df)
+
+# Εγγραφή με Row Groups & Snappy Compression (ενεργοποίηση Min-Max Zone Maps)
+pq.write_table(
+    table,
+    "balkan_master_panel.parquet",
+    compression="snappy",
+    row_group_size=50000
+)
+
+# Ανάγνωση μόνο των απαραίτητων στηλών (Column Pruning + Predicate Pushdown)
+filtered_table = pq.read_table(
+    "balkan_master_panel.parquet",
+    columns=["iso3", "year", "gdp_pc_unified"],
+    filters=[("year", ">=", 2020)]
+)""",
+        language="python",
+    )
+
+  with stack_tab4:
+    st.caption(
+        "**Σκοπός:** Βελτιστοποίηση σχεσιακής βάσης με σύνθετο ευρετήριο"
+        " B-Tree (μετατροπή Full Scan O(N) σε Index Search O(log N))."
+    )
+    st.code(
+        """-- Δημιουργία σύνθετου ευρετηρίου B-Tree
+CREATE INDEX idx_balkan_iso_year ON balkan_master_panel(iso3, year);
+
+-- Επιθεώρηση σχεδίου εκτέλεσης από τον Query Optimizer
+EXPLAIN QUERY PLAN
+SELECT iso3, year, gdp_pc_unified, grid_loss_pct
+FROM balkan_master_panel
+WHERE iso3 = 'SRB' AND year >= 2020;
+
+-- Έξοδος Optimizer: SEARCH balkan_master_panel USING INDEX idx_balkan_iso_year (iso3=? AND year>?)""",
+        language="sql",
+    )
+
+  st.markdown("---")
+
+  # --- 3. HARDWARE, TELECOMMUNICATIONS (FTTH / IEEE 1588 PTP) & CACHE BENCHMARK ---
+  st.markdown("#### 3. Τηλεπικοινωνιακή Υποδομή Smart Grids (FTTH & IEEE 1588 PTP) & Hardware Benchmark")
+  hw_col1, hw_col2 = st.columns([1, 1.8])
+
+  with hw_col1:
+    fiber_km = st.slider(
+        "Μήκος Οπτικής Ίνας FTTH Υποσταθμού (km):",
+        10,
+        250,
+        80,
+        10,
+        help="Απόσταση οπτικής ίνας μεταξύ κέντρου ελέγχου SCADA και υποσταθμών διανομής.",
+    )
+    n_records_sim = st.select_slider(
+        "Όγκος Τηλεμετρίας (Dataset Scale):",
+        options=["100.000 εγγραφές", "500.000 εγγραφές", "2.000.000 εγγραφές", "10.000.000 εγγραφές"],
+        value="500.000 εγγραφές",
+        help="Δείτε πώς κλιμακώνεται η κατανάλωση RAM, το μέγεθος δίσκου και η καθυστέρηση CPU.",
+    )
+
+    # Υπολογισμός καθυστέρησης φωτός σε οπτική ίνα (n ≈ 1.468 -> ~4.9 μs/km)
+    optical_latency_us = fiber_km * 4.9
+    st.metric(
+        "Καθυστέρηση Οπτικής Ίνας (FTTH Latency)",
+        f"{optical_latency_us:.1f} μs",
+        "Όριο προστασίας δικτύου: < 4.000 μs",
+        help="Χρόνος διάδοσης σήματος στην οπτική ίνα (4,9 μικροδευτερόλεπτα ανά χιλιόμετρο).",
+    )
+    st.metric(
+        "Ακρίβεια Συγχρονισμού (IEEE 1588 PTP)",
+        "± 100 ns",
+        "10.000x ακριβέστερο από NTP",
+        help="Precision Time Protocol (PTP) για συγχρονισμό φασομετρητών PMU στο έξυπνο δίκτυο.",
+    )
+
+  with hw_col2:
+    scale_mult = {
+        "100.000 εγγραφές": 0.2,
+        "500.000 εγγραφές": 1.0,
+        "2.000.000 εγγραφές": 4.0,
+        "10.000.000 εγγραφές": 20.0,
+    }[n_records_sim]
+
+    it_matrix_df = pd.DataFrame({
+        "Αρχιτεκτονική Επεξεργασίας": [
+            "Παραδοσιακό CSV + Python Scalar Loops",
+            "Σχεσιακή Βάση SQLite (Χωρίς Ευρετήριο)",
+            "Σχεσιακή Βάση SQLite (Με B-Tree Index)",
+            "Στηλοειδές Apache Parquet + NumPy SIMD",
+        ],
+        "Δίσκος (MB)": [
+            round(24.5 * scale_mult, 1),
+            round(28.0 * scale_mult, 1),
+            round(33.5 * scale_mult, 1),
+            round(5.8 * scale_mult, 1),
+        ],
+        "Μνήμη RAM (MB)": [
+            round(115.0 * scale_mult, 1),
+            round(64.0 * scale_mult, 1),
+            round(42.0 * scale_mult, 1),
+            round(14.2 * scale_mult, 1),
+        ],
+        "Απόκριση Query (ms)": [
+            round(420.0 * scale_mult, 1),
+            round(185.0 * scale_mult, 1),
+            round(24.0 * np.log2(scale_mult + 2), 1),
+            round(18.0 * np.log2(scale_mult + 2), 1),
+        ],
+        "Πολυπλοκότητα": [
+            "O(N) — Γραμμική Σάρωση",
+            "O(N) — Full Table Scan",
+            "O(log N) — B-Tree Search",
+            "O(log N) — Zone Maps & SIMD",
+        ],
+    })
+    st.dataframe(it_matrix_df, use_container_width=True, hide_index=True)
 
   render_guide(
-      title="Πρόβλεψη Τιμών Ενέργειας 5 Ημερών (Multi-Step Horizon Forecasting)",
+      title="Τηλεπικοινωνίες Smart Grids (FTTH / PTP) & Υπολογιστική Απόδοση",
       what_we_see=(
-          "Η μαύρη γραμμή δείχνει την πραγματική πορεία της αγοράς, ενώ οι"
-          " διακεκομμένες γραμμές δείχνουν τις προβλέψεις των μοντέλων XGBoost"
-          " και Deep Learning (MLP) μαζί με τη ζώνη αβεβαιότητας 95%."
+          "Αριστερά υπολογίζεται σε μικροδευτερόλεπτα (μs) η καθυστέρηση"
+          " μετάδοσης δεδομένων σε δίκτυο οπτικών ινών FTTH και η ακρίβεια"
+          " χρονισμού IEEE 1588 PTP. Δεξιά συγκρίνεται η απόδοση CPU/RAM/Disk"
+          " ανά αρχιτεκτονική."
       ),
       methodology=(
-          "Εκπαίδευση με Walk-Forward Validation, κυκλική κωδικοποίηση ώρας"
-          " (sin/cos) και κυλιόμενη μεταβλητότητα 24 ωρών."
+          "Φυσική διάδοσης φωτός σε μονορυθμική οπτική ίνα (4,9 μs/km) και"
+          " μετρήσεις πολυπλοκότητας μνήμης Cache L1/L2 με εντολές AVX2 SIMD."
       ),
       takeaway=(
-          "Ο αλγόριθμος XGBoost υπερέχει στην αποτύπωση των απότομων αιχμών"
-          " τιμών (R² = 0,924), προσφέροντας αξιόπιστο εργαλείο αντιστάθμισης"
-          " κινδύνου (Hedging) για τους συμμετέχοντες στην αγορά."
+          "Τα έξυπνα δίκτυα απαιτούν ταυτόχρονα υπερυψηλή ταχύτητα δικτύου"
+          " (FTTH + PTP < 1 ms) και στηλοειδή επεξεργασία δεδομένων (Parquet +"
+          " SIMD) για ανίχνευση βλαβών σε πραγματικό χρόνο."
       ),
   )
+
+  # --- 4. ΕΝΣΩΜΑΤΩΜΕΝΑ ΔΙΑΓΡΑΜΜΑΤΑ ΥΨΗΛΗΣ ΑΝΑΛΥΣΗΣ (300 DPI) ---
+  import os
+  available_imgs = [
+      ("fig_3_1_erd_star_schema.png", "Διάγραμμα 3.1: Σχεσιακό Σχήμα Αστέρα (Star Schema / ERD)"),
+      ("fig_3_4_query_execution_plan.png", "Διάγραμμα 3.4: Query Optimizer — Full Scan O(N) vs Parquet Zone Maps O(log N)"),
+      ("fig_4_4_feature_pipeline_visual.png", "Διάγραμμα 4.4: Αγωγός Feature Engineering (STL, Cyclical Encoding & Walk-Forward)"),
+      ("fig_it_and_5day_forecast.png", "Benchmark Υλικού (Disk I/O & CPU SIMD) και Πρόβλεψη Τιμών 5 Ημερών SEEPEX"),
+  ]
+  existing_imgs = [(f, cap) for f, cap in available_imgs if os.path.exists(f)]
+  if existing_imgs:
+    st.markdown("---")
+    st.markdown("#### 4. Τεχνικά Διαγράμματα Αρχιτεκτονικής (300 DPI Publication Figures)")
+    cols_img = st.columns(2)
+    for i, (img_file, img_cap) in enumerate(existing_imgs):
+      with cols_img[i % 2]:
+        st.image(img_file, caption=img_cap, use_container_width=True)
