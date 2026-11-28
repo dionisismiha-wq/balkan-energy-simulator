@@ -21,44 +21,48 @@ st.set_page_config(
 )
 
 # ==============================================================================
-# 2. ΕΠΙΛΟΓΕΑΣ ΦΩΤΟΓΡΑΦΙΑΣ BACKGROUND & ΧΡΩΜΑΤΙΚΟΥ ΘΕΜΑΤΟΣ (ADAPTIVE THEME)
+# 2. ΕΠΙΛΟΓΕΑΣ ΦΩΤΟΓΡΑΦΙΑΣ BACKGROUND & ΧΡΩΜΑΤΙΚΟΥ ΘΕΜΑΤΟΣ
 # ==============================================================================
 THEMES = {
     "⚡ Smart Grids & Energy (Φωτεινό)": {
         "bg_url": "https://images.unsplash.com/photo-1473341304170-971dccb5ac1e?auto=format&fit=crop&w=1920&q=80",
-        "overlay": "rgba(248, 250, 252, 0.88)",
-        "card_bg": "rgba(255, 255, 255, 0.94)",
+        "overlay": "rgba(248, 250, 252, 0.90)",
+        "card_bg": "rgba(255, 255, 255, 0.96)",
         "text_color": "#0f172a",
-        "subtext_color": "#475569",
+        "subtext_color": "#334155",
         "accent": "#2563eb",
         "plotly_template": "plotly_white",
+        "chart_font": "#0f172a",
     },
     "🌐 Fiber Optics & Data Center (Σκούρο Tech)": {
         "bg_url": "https://images.unsplash.com/photo-1558494949-ef010cbdcc31?auto=format&fit=crop&w=1920&q=80",
-        "overlay": "rgba(15, 23, 42, 0.86)",
-        "card_bg": "rgba(30, 41, 59, 0.92)",
+        "overlay": "rgba(15, 23, 42, 0.88)",
+        "card_bg": "rgba(30, 41, 59, 0.95)",
         "text_color": "#f8fafc",
         "subtext_color": "#cbd5e1",
         "accent": "#38bdf8",
         "plotly_template": "plotly_dark",
+        "chart_font": "#f8fafc",
     },
     "🌿 Green Renewables & Wind (Φυσικό Πράσινο)": {
         "bg_url": "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=1920&q=80",
-        "overlay": "rgba(240, 253, 244, 0.89)",
-        "card_bg": "rgba(255, 255, 255, 0.94)",
+        "overlay": "rgba(240, 253, 244, 0.91)",
+        "card_bg": "rgba(255, 255, 255, 0.96)",
         "text_color": "#064e3b",
-        "subtext_color": "#374151",
+        "subtext_color": "#1f2937",
         "accent": "#16a34a",
         "plotly_template": "plotly_white",
+        "chart_font": "#064e3b",
     },
     "📊 Financial Markets & Analytics (Χρυσό / Σκούρο)": {
         "bg_url": "https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=1920&q=80",
-        "overlay": "rgba(17, 24, 39, 0.88)",
-        "card_bg": "rgba(31, 41, 55, 0.92)",
+        "overlay": "rgba(17, 24, 39, 0.89)",
+        "card_bg": "rgba(31, 41, 55, 0.95)",
         "text_color": "#f9fafb",
         "subtext_color": "#d1d5db",
         "accent": "#f59e0b",
         "plotly_template": "plotly_dark",
+        "chart_font": "#f9fafb",
     },
 }
 
@@ -68,13 +72,12 @@ with st.sidebar:
       "Επιλέξτε Φωτογραφία & Χρώμα:",
       list(THEMES.keys()),
       index=0,
-      help="Αλλάζει τη φωτογραφία φόντου και προσαρμόζει αυτόματα όλα τα χρώματα και τα γραφήματα.",
   )
   st.markdown("---")
 
 theme = THEMES[selected_theme_name]
 
-# Δυναμικό CSS που προσαρμόζει την εικόνα background, τις κάρτες και την αντίθεση γραμμάτων
+# Ασφαλές CSS: ΔΕΝ παρεμβαίνει στα εσωτερικά SVG/Canvas των γραφημάτων Plotly
 st.markdown(
     f"""
 <style>
@@ -83,19 +86,24 @@ st.markdown(
         background-size: cover;
         background-position: center;
         background-attachment: fixed;
-        color: {theme['text_color']};
     }}
-    .stApp p, .stApp li, .stApp label, .stApp h1, .stApp h2, .stApp h3, .stApp h4, .stApp span {{
+    /* Χρώμα κειμένου μόνο σε τίτλους και παραγράφους του Markdown/Labels */
+    [data-testid="stMarkdownContainer"] p,
+    [data-testid="stMarkdownContainer"] li,
+    [data-testid="stMarkdownContainer"] h1,
+    [data-testid="stMarkdownContainer"] h2,
+    [data-testid="stMarkdownContainer"] h3,
+    [data-testid="stMarkdownContainer"] h4,
+    [data-testid="stWidgetLabel"] p {{
         color: {theme['text_color']} !important;
     }}
-    /* Κάρτες KPI (st.metric) με ημιδιαφανές glassmorphism */
+    /* Κάρτες KPI (st.metric) */
     div[data-testid="stMetric"] {{
         background-color: {theme['card_bg']} !important;
-        backdrop-filter: blur(8px);
         border-left: 5px solid {theme['accent']} !important;
-        border-radius: 12px;
-        padding: 14px 18px;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.10);
+        border-radius: 10px;
+        padding: 14px 16px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
     }}
     div[data-testid="stMetricLabel"] p {{
         color: {theme['subtext_color']} !important;
@@ -105,24 +113,24 @@ st.markdown(
         color: {theme['text_color']} !important;
         font-weight: 800 !important;
     }}
-    /* Κλασικές οριζόντιες καρτέλες (Tabs) */
+    /* Καρτέλες (Tabs) */
     button[data-baseweb="tab"] {{
         background-color: {theme['card_bg']} !important;
         border-radius: 8px 8px 0 0 !important;
         padding: 8px 14px !important;
         font-weight: 600 !important;
     }}
+    button[data-baseweb="tab"] p {{
+        color: {theme['text_color']} !important;
+    }}
     button[data-baseweb="tab"][aria-selected="true"] {{
         border-bottom: 3px solid {theme['accent']} !important;
-        color: {theme['accent']} !important;
     }}
     /* Popover κουμπιά πληροφοριών */
     div[data-testid="stPopover"] > button {{
         background-color: {theme['card_bg']} !important;
-        border: 1px solid {theme['accent']} !important;
-        color: {theme['text_color']} !important;
+        border: 1.5px solid {theme['accent']} !important;
         border-radius: 20px !important;
-        font-size: 13px !important;
     }}
 </style>
 """,
@@ -130,8 +138,31 @@ st.markdown(
 )
 
 
+def style_plotly(fig, height=420):
+  """Εξασφαλίζει ότι όλοι οι αριθμοί, οι άξονες και τα ονόματα χωρών φαίνονται πεντακάθαρα."""
+  fig.update_layout(
+      template=theme["plotly_template"],
+      height=height,
+      font=dict(color=theme["chart_font"], size=12),
+      title_font=dict(color=theme["chart_font"], size=15),
+      paper_bgcolor=theme["card_bg"],
+      plot_bgcolor="rgba(0,0,0,0)",
+      margin=dict(l=15, r=25, t=48, b=20),
+      legend=dict(font=dict(color=theme["chart_font"])),
+  )
+  fig.update_xaxes(
+      tickfont=dict(color=theme["chart_font"], size=11),
+      title_font=dict(color=theme["chart_font"], size=12),
+  )
+  fig.update_yaxes(
+      tickfont=dict(color=theme["chart_font"], size=11),
+      title_font=dict(color=theme["chart_font"], size=12),
+  )
+  return fig
+
+
 def info_popover(title: str, what_we_see: str, methodology: str, takeaway: str):
-  """Μίνιμαλ κουμπί πληροφοριών: ανοίγει αναδυόμενο παράθυρο μόνο όταν ο χρήστης πατήσει πάνω."""
+  """Μίνιμαλ κουμπί πληροφοριών."""
   with st.popover(f"💡 Πληροφορίες: {title}"):
     st.markdown(f"**👁️ Τι βλέπουμε:** {what_we_see}")
     st.markdown(f"**⚙️ Μεθοδολογία:** {methodology}")
@@ -198,7 +229,7 @@ k4.metric("Φτωχοί Ιδιοκτήτες", f"{df_filtered['Poor_Owners'].mea
 
 st.markdown("")
 
-# Επιστροφή στις κλασικές οριζόντιες ταμπέλες (Tabs)
+# 9 Οριζόντιες Καρτέλες
 tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
     "🗺️ Χάρτης & Σύγκλιση",
     "🎛️ Προσομοιωτής Πολιτικής",
@@ -208,11 +239,11 @@ tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9 = st.tabs([
     "💶 Financial & Carbon BI",
     "⚙️ Data Engineering Lab",
     "🖥️ IT Architecture & Code",
-    "🔬 Προχωρημένη Στοχαστική & Αιτιακή Ανάλυση",
+    "🔬 Στοχαστική & Αιτιακή Ανάλυση",
 ])
 
 # ==============================================================================
-# TAB 1: ΧΑΡΤΗΣ & ΣΥΓΚΛΙΣΗ (MINIMAL + POPOVER)
+# TAB 1: ΧΑΡΤΗΣ & ΣΥΓΚΛΙΣΗ (ΕΜΦΑΝΕΙΣ ΑΡΙΘΜΟΙ & ΟΝΟΜΑΤΑ ΧΩΡΩΝ)
 # ==============================================================================
 with tab1:
   h_c1, h_c2 = st.columns([3, 1])
@@ -221,53 +252,66 @@ with tab1:
   with h_c2:
     info_popover(
         "Χάρτης & Κατάταξη",
-        "Γεωγραφική κατανομή δεικτών σε 11 χώρες των Βαλκανίων.",
+        "Γεωγραφική κατανομή δεικτών και ακριβείς τιμές σε 11 χώρες των Βαλκανίων.",
         "Ενοποίηση Eurostat (EU-SILC) & World Bank WDI (2000–2025).",
         "Σαφής διαχωρισμός μεταξύ κρατών-μελών Ε.Ε. και Δυτικών Βαλκανίων.",
     )
 
   metric_map = {
-      "Κατά Κεφαλήν ΑΕΠ (USD)": ("GDP_pc", "Blues"),
-      "Αδυναμία Επαρκούς Θέρμανσης (%)": ("Cold_Homes", "Reds"),
-      "Φτωχοί Ιδιοκτήτες Κατοικίας (%)": ("Poor_Owners", "Oranges"),
-      "Κατά Κεφαλήν Κατανάλωση Ενέργειας (kWh)": ("Energy_kWh", "Viridis"),
-      "Μερίδιο Άνθρακα στις Εκπομπές CO₂ (%)": ("Coal_Share", "Greys"),
-      "Απώλειες Δικτύου Ηλεκτρισμού (%)": ("Grid_Loss", "Purples"),
-      "Μερίδιο ΑΠΕ στην Ηλεκτροπαραγωγή (%)": ("Renewables_Pct", "Greens"),
+      "Κατά Κεφαλήν ΑΕΠ (USD)": ("GDP_pc", "Blues", ",.0f"),
+      "Αδυναμία Επαρκούς Θέρμανσης (%)": ("Cold_Homes", "Reds", ".1f"),
+      "Φτωχοί Ιδιοκτήτες Κατοικίας (%)": ("Poor_Owners", "Oranges", ".1f"),
+      "Κατά Κεφαλήν Κατανάλωση Ενέργειας (kWh)": ("Energy_kWh", "Viridis", ",.0f"),
+      "Μερίδιο Άνθρακα στις Εκπομπές CO₂ (%)": ("Coal_Share", "Greys", ".1f"),
+      "Απώλειες Δικτύου Ηλεκτρισμού (%)": ("Grid_Loss", "Purples", ".1f"),
+      "Μερίδιο ΑΠΕ στην Ηλεκτροπαραγωγή (%)": ("Renewables_Pct", "Greens", ".1f"),
   }
   chosen_label = st.selectbox("Επιλέξτε δείκτη:", list(metric_map.keys()))
-  col_name, color_scale = metric_map[chosen_label]
+  col_name, color_scale, num_fmt = metric_map[chosen_label]
 
-  c_map, c_bar = st.columns([1.2, 1])
+  c_map, c_bar = st.columns([1.15, 1.15])
   with c_map:
     fig_map = px.choropleth(
         df_filtered,
         locations="ISO3",
         color=col_name,
         hover_name="Χώρα",
+        hover_data={"ISO3": True, "Ομάδα": True, col_name: f":{num_fmt}"},
         color_continuous_scale=color_scale,
         scope="europe",
-        title=chosen_label,
-        template=theme["plotly_template"],
+        title=f"Χάρτης: {chosen_label}",
     )
-    fig_map.update_geos(center=dict(lat=43.5, lon=21.5), projection_scale=5.2, visible=True, showcountries=True)
-    fig_map.update_layout(height=420, margin=dict(l=0, r=0, t=40, b=0), paper_bgcolor="rgba(0,0,0,0)")
+    fig_map.update_geos(
+        center=dict(lat=43.5, lon=21.5),
+        projection_scale=5.3,
+        visible=True,
+        showcountries=True,
+        countrycolor="#64748b",
+        bgcolor="rgba(0,0,0,0)",
+    )
+    fig_map = style_plotly(fig_map, height=450)
     st.plotly_chart(fig_map, use_container_width=True)
 
   with c_bar:
     df_sorted = df_filtered.sort_values(col_name, ascending=True)
+    max_val = df_sorted[col_name].max() if len(df_sorted) > 0 else 100
     fig_rank = px.bar(
         df_sorted,
         x=col_name,
         y="Χώρα",
         color="Ομάδα",
         orientation="h",
-        text_auto=True,
+        text=df_sorted[col_name].apply(lambda v: f"{v:{num_fmt}}"),
         color_discrete_map={"EU Balkans": "#2563eb", "Non-EU Balkans": "#dc2626"},
-        title=f"Κατάταξη: {chosen_label}",
-        template=theme["plotly_template"],
+        title=f"Κατάταξη Χωρών: {chosen_label}",
     )
-    fig_rank.update_layout(height=420, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    fig_rank.update_traces(
+        textposition="outside",
+        textfont=dict(color=theme["chart_font"], size=11),
+        cliponaxis=False,
+    )
+    fig_rank = style_plotly(fig_rank, height=450)
+    fig_rank.update_xaxes(range=[0, max_val * 1.22])
     st.plotly_chart(fig_rank, use_container_width=True)
 
 # ==============================================================================
@@ -315,11 +359,14 @@ with tab2:
         x="Σενάριο",
         y="Κατά Κεφαλήν ΑΕΠ (USD)",
         color="Σενάριο",
-        text_auto=",.0f",
+        text=comp_df["Κατά Κεφαλήν ΑΕΠ (USD)"].apply(lambda v: f"{v:,.0f} USD"),
         color_discrete_sequence=["#dc2626", "#16a34a", "#2563eb"],
-        template=theme["plotly_template"],
+        title=f"Τροχιά Σύγκλισης: {selected_country}",
     )
-    fig_sim.update_layout(showlegend=False, height=340, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    fig_sim.update_traces(textposition="outside", textfont=dict(color=theme["chart_font"], size=12))
+    fig_sim = style_plotly(fig_sim, height=360)
+    fig_sim.update_layout(showlegend=False)
+    fig_sim.update_yaxes(range=[0, max(base_gdp, sim_gdp_net, 18405) * 1.2])
     st.plotly_chart(fig_sim, use_container_width=True)
 
 # ==============================================================================
@@ -374,12 +421,13 @@ with tab3:
         x="Συνεισφορά SHAP (USD)",
         y="Μεταβλητή",
         orientation="h",
+        text=shap_df["Συνεισφορά SHAP (USD)"].apply(lambda v: f"{v:+,.0f} $"),
         color="Συνεισφορά SHAP (USD)",
         color_continuous_scale=["#dc2626", "#94a3b8", "#16a34a"],
         title=f"SHAP Attribution: {country_shap}",
-        template=theme["plotly_template"],
     )
-    fig_shap.update_layout(height=380, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    fig_shap.update_traces(textposition="outside", textfont=dict(color=theme["chart_font"], size=11))
+    fig_shap = style_plotly(fig_shap, height=390)
     st.plotly_chart(fig_shap, use_container_width=True)
 
 # ==============================================================================
@@ -420,10 +468,10 @@ with tab4:
         y="Τιμή (€/MWh)",
         color="Κατάσταση",
         color_discrete_map={"Κανονική": "#2563eb", "Price Spike": "#dc2626"},
-        template=theme["plotly_template"],
+        title="Ωριαία Τιμή Εκκαθάρισης Αγοράς SEEPEX (€/MWh)",
     )
     fig_sp.add_trace(go.Scatter(x=hours, y=prices, mode="lines", line=dict(color="#64748b", width=1), showlegend=False))
-    fig_sp.update_layout(height=380, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    fig_sp = style_plotly(fig_sp, height=390)
     st.plotly_chart(fig_sp, use_container_width=True)
 
 # ==============================================================================
@@ -450,7 +498,7 @@ with tab5:
   )
   if st.button("▶️ Εκτέλεση SQL", type="primary"):
     res_sql = pd.read_sql_query(sql_input, conn)
-    st.dataframe(res_sql, use_container_width=True)
+    st.dataframe(res_sql, use_container_width=True, hide_index=True)
 
 # ==============================================================================
 # TAB 6: FINANCIAL & CARBON BI (MINIMAL + POPOVER)
@@ -505,14 +553,40 @@ with tab6:
     cum_cf = [-capex_invest_meur]
     for _ in range(1, 9):
       cum_cf.append(cum_cf[-1] + annual_cash_inflow_meur)
-    fig_cf = go.Figure(data=[go.Bar(x=[f"Έτος {y}" for y in yrs], y=cum_cf, marker_color=["#dc2626" if val < 0 else "#16a34a" for val in cum_cf])])
-    fig_cf.update_layout(title=f"Ταμειακές Ροές CAPEX (Payback: {payback_years:.1f} Έτη)", template=theme["plotly_template"], height=350, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    fig_cf = go.Figure(
+        data=[
+            go.Bar(
+                x=[f"Έτος {y}" for y in yrs],
+                y=cum_cf,
+                text=[f"{val:+.1f}M" for val in cum_cf],
+                textposition="outside",
+                textfont=dict(color=theme["chart_font"], size=11),
+                marker_color=["#dc2626" if val < 0 else "#16a34a" for val in cum_cf],
+            )
+        ]
+    )
+    fig_cf = style_plotly(fig_cf, height=370)
+    fig_cf.update_layout(title=f"Ταμειακές Ροές CAPEX (Payback: {payback_years:.1f} Έτη)")
     st.plotly_chart(fig_cf, use_container_width=True)
 
   with g_col2:
     mod_ebitda = ((base_ebitda_meur + annual_cash_inflow_meur - (cbam_liability_meur * 0.25)) / p["base_rev"]) * 100.0
-    fig_eb = go.Figure(data=[go.Bar(x=["Βασικό", "Με CBAM", "Εκσυγχρονισμός"], y=[p["base_ebitda_pct"], post_cbam_ebitda_pct, mod_ebitda], marker_color=["#2563eb", "#dc2626", "#16a34a"])])
-    fig_eb.update_layout(title="Περιθώριο EBITDA (%)", template=theme["plotly_template"], height=350, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+    vals_eb = [p["base_ebitda_pct"], post_cbam_ebitda_pct, mod_ebitda]
+    fig_eb = go.Figure(
+        data=[
+            go.Bar(
+                x=["Βασικό", "Με CBAM", "Εκσυγχρονισμός"],
+                y=vals_eb,
+                text=[f"{v:.1f}%" for v in vals_eb],
+                textposition="outside",
+                textfont=dict(color=theme["chart_font"], size=12),
+                marker_color=["#2563eb", "#dc2626", "#16a34a"],
+            )
+        ]
+    )
+    fig_eb = style_plotly(fig_eb, height=370)
+    fig_eb.update_layout(title="Περιθώριο EBITDA (%)")
+    fig_eb.update_yaxes(range=[0, max(vals_eb) * 1.25])
     st.plotly_chart(fig_eb, use_container_width=True)
 
 # ==============================================================================
@@ -573,7 +647,8 @@ with tab8:
           )
       ]
   )
-  fig_sankey.update_layout(height=320, margin=dict(l=10, r=10, t=20, b=10), template=theme["plotly_template"], paper_bgcolor="rgba(0,0,0,0)")
+  fig_sankey = style_plotly(fig_sankey, height=340)
+  fig_sankey.update_layout(title="Αρχιτεκτονική Medallion (Bronze → Silver → Gold)")
   st.plotly_chart(fig_sankey, use_container_width=True)
 
   c_lang = st.radio("Επιθεώρηση Κώδικα:", ["🔵 R (fixest)", "🟣 SPSS (ANOVA)", "🟢 Python (Parquet)", "🟠 SQL (Index)"], horizontal=True)
@@ -586,26 +661,19 @@ with tab8:
   else:
     st.code("CREATE INDEX idx_balkan_iso_year ON balkan_master_panel(iso3, year);", language="sql")
 
-
 # ==============================================================================
 # TAB 9: ΠΡΟΧΩΡΗΜΕΝΗ ΣΤΟΧΑΣΤΙΚΗ & ΑΙΤΙΑΚΗ ΑΝΑΛΥΣΗ (STOCHASTIC, CAUSAL & HPC)
 # ==============================================================================
 with tab9:
   h_c1, h_c2 = st.columns([3, 1])
   with h_c1:
-    st.subheader(
-        "Προχωρημένη Υπολογιστική Μοντελοποίηση: Στοχαστικές Διαφορικές"
-        " Εξισώσεις, Causal Inference & Tail Latency"
-    )
+    st.subheader("Προχωρημένη Υπολογιστική Μοντελοποίηση: Στοχαστικές Διαφορικές Εξισώσεις, Causal Inference & Tail Latency")
   with h_c2:
     info_popover(
         "Προχωρημένη Μεθοδολογία",
-        "1.000-path Monte Carlo προσομοίωση Merton Jump-Diffusion, εκτίμηση"
-        " Causal ATT (Doubly Robust) και ανάλυση Tail Latency p99.9.",
-        "Στοχαστικός λογισμός Itô (dP_t = κ(θ - P_t)dt + σdW_t + J_t dN_t) και"
-        " ημι-παραμετρική αιτιακή συμπερασματολογία.",
-        "Ποσοτικοποιεί τον ακραίο κίνδυνο ουράς (CVaR 95%) και αποδεικνύει την"
-        " αιτιακή επίδραση των θεσμικών μεταρρυθμίσεων.",
+        "1.000-path Monte Carlo προσομοίωση Merton Jump-Diffusion, εκτίμηση Causal ATT και ανάλυση Tail Latency p99.9.",
+        "Στοχαστικός λογισμός Itô (dP_t = κ(θ - P_t)dt + σdW_t + J_t dN_t) και ημι-παραμετρική αιτιακή συμπερασματολογία.",
+        "Ποσοτικοποιεί τον ακραίο κίνδυνο ουράς (CVaR 95%) και αποδεικνύει την αιτιακή επίδραση των μεταρρυθμίσεων.",
     )
 
   sub1, sub2, sub3 = st.tabs([
@@ -614,193 +682,66 @@ with tab9:
       "⚡ 3. HPC Systems & Tail Latency (p99.9)",
   ])
 
-  # ----------------------------------------------------------------------------
-  # 9.1: STOCHASTIC DIFFERENTIAL EQUATIONS (MERTON JUMP-DIFFUSION)
-  # ----------------------------------------------------------------------------
   with sub1:
-    st.latex(
-        r"dP_t = \kappa(\theta - P_t)\,dt + \sigma\,dW_t + J_t\,dN_t(\lambda)"
-    )
-
+    st.latex(r"dP_t = \kappa(\theta - P_t)\,dt + \sigma\,dW_t + J_t\,dN_t(\lambda)")
     sc_c1, sc_c2 = st.columns([1, 2.4])
     with sc_c1:
-      kappa = st.slider(
-          "Ταχύτητα Επαναφοράς στον Μέσο (κ):",
-          0.05,
-          0.60,
-          0.22,
-          0.05,
-          help="Ρυθμός με τον οποίο οι τιμές SEEPEX επιστρέφουν στη θεμελιώδη ισορροπία θ.",
-      )
-      sigma_vol = st.slider(
-          "Στοχαστική Μεταβλητότητα Διάχυσης (σ):",
-          5.0,
-          35.0,
-          14.0,
-          1.0,
-          help="Τυπική απόκλιση της κίνησης Brown (dW_t).",
-      )
-      jump_lambda = st.slider(
-          "Ένταση Αλμάτων Poisson (λ jumps/day):",
-          0.05,
-          0.80,
-          0.25,
-          0.05,
-          help="Συχνότητα εμφάνισης ακραίων αλμάτων τιμής λόγω συμφόρησης δικτύου.",
-      )
-      n_paths = st.select_slider(
-          "Μονοπάτια Monte Carlo:", options=[250, 500, 1000], value=500
-      )
+      kappa = st.slider("Επαναφορά στον Μέσο (κ):", 0.05, 0.60, 0.22, 0.05)
+      sigma_vol = st.slider("Μεταβλητότητα Διάχυσης (σ):", 5.0, 35.0, 14.0, 1.0)
+      jump_lambda = st.slider("Ένταση Αλμάτων Poisson (λ):", 0.05, 0.80, 0.25, 0.05)
+      n_paths = st.select_slider("Μονοπάτια Monte Carlo:", options=[250, 500, 1000], value=500)
 
     np.random.seed(2026)
-    dt = 1.0 / 24.0
-    steps = 120
-    theta_eq = 94.0
+    dt, steps, theta_eq = 1.0 / 24.0, 120, 94.0
     paths = np.zeros((n_paths, steps))
     paths[:, 0] = 92.0
-
     for t in range(1, steps):
-      hod_val = t % 24
-      diurnal_theta = theta_eq + 24.0 * np.sin(2 * np.pi * (hod_val - 7) / 24.0)
+      diurnal_theta = theta_eq + 24.0 * np.sin(2 * np.pi * ((t % 24) - 7) / 24.0)
       dW = np.random.normal(0, np.sqrt(dt), n_paths)
       dN = np.random.poisson(jump_lambda * dt, n_paths)
       J = np.random.normal(65.0, 22.0, n_paths) * dN
-      paths[:, t] = np.maximum(
-          15.0,
-          paths[:, t - 1]
-          + kappa * (diurnal_theta - paths[:, t - 1]) * dt
-          + sigma_vol * dW
-          + J,
-      )
+      paths[:, t] = np.maximum(15.0, paths[:, t - 1] + kappa * (diurnal_theta - paths[:, t - 1]) * dt + sigma_vol * dW + J)
 
-    mean_path = paths.mean(axis=0)
-    p05_path = np.percentile(paths, 5, axis=0)
-    p95_path = np.percentile(paths, 95, axis=0)
-
-    terminal_avg_prices = paths.mean(axis=1)
-    var_95 = np.percentile(terminal_avg_prices, 95)
-    cvar_95 = terminal_avg_prices[terminal_avg_prices >= var_95].mean()
+    mean_path, p05_path, p95_path = paths.mean(axis=0), np.percentile(paths, 5, axis=0), np.percentile(paths, 95, axis=0)
+    terminal_avg = paths.mean(axis=1)
+    var_95 = np.percentile(terminal_avg, 95)
+    cvar_95 = terminal_avg[terminal_avg >= var_95].mean()
 
     with sc_c1:
       st.metric("Energy VaR (95%, 5-Day)", f"{var_95:.2f} €/MWh")
-      st.metric(
-          "CVaR / Expected Shortfall (95%)",
-          f"{cvar_95:.2f} €/MWh",
-          f"+{cvar_95 - var_95:.2f} €/MWh tail risk",
-          delta_color="inverse",
-      )
+      st.metric("CVaR / Expected Shortfall", f"{cvar_95:.2f} €/MWh", f"+{cvar_95 - var_95:.2f} €/MWh tail risk", delta_color="inverse")
 
     with sc_c2:
       hrs_mc = np.arange(1, steps + 1)
       fig_mc = go.Figure()
       for i in range(min(25, n_paths)):
-        fig_mc.add_trace(
-            go.Scatter(
-                x=hrs_mc,
-                y=paths[i],
-                mode="lines",
-                line=dict(color="rgba(148, 163, 184, 0.22)", width=1),
-                showlegend=False,
-            )
-        )
-      fig_mc.add_trace(
-          go.Scatter(
-              x=hrs_mc,
-              y=mean_path,
-              mode="lines",
-              name="Αναμενόμενη Τροχιά E[P_t]",
-              line=dict(color="#2563eb", width=2.5),
-          )
-      )
-      fig_mc.add_trace(
-          go.Scatter(
-              x=hrs_mc,
-              y=p95_path,
-              mode="lines",
-              name="Άνω Όριο Κινδύνου (95th Percentile)",
-              line=dict(color="#dc2626", width=2, dash="dash"),
-          )
-      )
-      fig_mc.add_trace(
-          go.Scatter(
-              x=hrs_mc,
-              y=p05_path,
-              mode="lines",
-              name="Κάτω Όριο (5th Percentile)",
-              line=dict(color="#16a34a", width=2, dash="dot"),
-          )
-      )
-      fig_mc.update_layout(
-          title=f"Monte Carlo ({n_paths} Paths) Merton Jump-Diffusion — 5-Day SEEPEX Horizon",
-          xaxis_title="Ώρες Πρόβλεψης (t+1 έως t+120)",
-          yaxis_title="Τιμή Εκκαθάρισης (€/MWh)",
-          template=theme["plotly_template"],
-          height=400,
-          paper_bgcolor="rgba(0,0,0,0)",
-          plot_bgcolor="rgba(0,0,0,0)",
-      )
+        fig_mc.add_trace(go.Scatter(x=hrs_mc, y=paths[i], mode="lines", line=dict(color="rgba(148, 163, 184, 0.25)", width=1), showlegend=False))
+      fig_mc.add_trace(go.Scatter(x=hrs_mc, y=mean_path, mode="lines", name="Αναμενόμενη Τροχιά E[P_t]", line=dict(color="#2563eb", width=2.5)))
+      fig_mc.add_trace(go.Scatter(x=hrs_mc, y=p95_path, mode="lines", name="Άνω Όριο Κινδύνου (95%)", line=dict(color="#dc2626", width=2, dash="dash")))
+      fig_mc.add_trace(go.Scatter(x=hrs_mc, y=p05_path, mode="lines", name="Κάτω Όριο (5%)", line=dict(color="#16a34a", width=2, dash="dot")))
+      fig_mc = style_plotly(fig_mc, height=400)
+      fig_mc.update_layout(title=f"Monte Carlo ({n_paths} Paths) Merton Jump-Diffusion — 5-Day SEEPEX", xaxis_title="Ώρες (1 έως 120)", yaxis_title="€/MWh")
       st.plotly_chart(fig_mc, use_container_width=True)
 
-  # ----------------------------------------------------------------------------
-  # 9.2: CAUSAL INFERENCE (DOUBLY ROBUST ATT & SENSITIVITY)
-  # ----------------------------------------------------------------------------
   with sub2:
-    st.latex(
-        r"\widehat{\tau}_{\text{ATT}} = \frac{1}{N_1}\sum_{i: D_i=1} \left["
-        r" Y_i - \hat{\mu}_0(X_i) - \frac{\hat{e}(X_i)}{1-\hat{e}(X_i)}\left(Y_i"
-        r" - \hat{\mu}_0(X_i)\right) \right]"
-    )
-
+    st.latex(r"\widehat{\tau}_{\text{ATT}} = \frac{1}{N_1}\sum_{i: D_i=1} \left[ Y_i - \hat{\mu}_0(X_i) - \frac{\hat{e}(X_i)}{1-\hat{e}(X_i)}\left(Y_i - \hat{\mu}_0(X_i)\right) \right]")
     ci_c1, ci_c2 = st.columns([1.2, 1.8])
     with ci_c1:
-      st.markdown("**Παράμετροι Αιτιακής Εκτίμησης (EU Institutional Integration)**")
-      confounder_gamma = st.slider(
-          "Ισχύς Μη Παρατηρήσιμου Συγχυτικού Παράγοντα (Γ):",
-          1.0,
-          2.5,
-          1.0,
-          0.1,
-      )
+      confounder_gamma = st.slider("Ισχύς Μη Παρατηρήσιμου Συγχυτικού Παράγοντα (Γ):", 1.0, 2.5, 1.0, 0.1)
       att_est = 6840.0 / confounder_gamma
-      ci_low = att_est - 1420.0 * confounder_gamma
-      ci_high = att_est + 1420.0
-
-      st.metric(
-          "Αιτιακό Αποτέλεσμα Θεραπείας (ATT)",
-          f"+{att_est:,.0f} USD",
-          f"95% CI: [{ci_low:,.0f}, {ci_high:,.0f}]",
-      )
-      st.metric("E-Value (Robustness to Confounding)", "3.84", "Ισχυρή αιτιακή εγκυρότητα")
+      st.metric("Αιτιακό Αποτέλεσμα (ATT)", f"+{att_est:,.0f} USD", f"95% CI: [{att_est - 1420*confounder_gamma:,.0f}, {att_est + 1420:,.0f}]")
+      st.metric("E-Value (Robustness)", "3.84", "Ισχυρή αιτιακή εγκυρότητα")
 
     with ci_c2:
       np.random.seed(7)
-      ps_treated = np.clip(np.random.beta(5, 2.5, 200), 0.05, 0.95)
-      ps_control = np.clip(np.random.beta(2.5, 5, 200), 0.05, 0.95)
-
       fig_ps = go.Figure()
-      fig_ps.add_trace(
-          go.Histogram(x=ps_treated, name="Treated (EU Balkans)", opacity=0.65, marker_color="#2563eb", nbinsx=25)
-      )
-      fig_ps.add_trace(
-          go.Histogram(x=ps_control, name="Control (Non-EU Balkans)", opacity=0.65, marker_color="#dc2626", nbinsx=25)
-      )
-      fig_ps.update_layout(
-          barmode="overlay",
-          title="Έλεγχος Κοινής Υποστήριξης (Propensity Score Common Support)",
-          xaxis_title="Εκτιμώμενη Πιθανότητα Θεραπείας e(X) = P(D=1|X)",
-          yaxis_title="Πυκνότητα Παρατηρήσεων",
-          template=theme["plotly_template"],
-          height=360,
-          paper_bgcolor="rgba(0,0,0,0)",
-          plot_bgcolor="rgba(0,0,0,0)",
-      )
+      fig_ps.add_trace(go.Histogram(x=np.clip(np.random.beta(5, 2.5, 200), 0.05, 0.95), name="Treated (EU Balkans)", opacity=0.65, marker_color="#2563eb", nbinsx=25))
+      fig_ps.add_trace(go.Histogram(x=np.clip(np.random.beta(2.5, 5, 200), 0.05, 0.95), name="Control (Non-EU Balkans)", opacity=0.65, marker_color="#dc2626", nbinsx=25))
+      fig_ps = style_plotly(fig_ps, height=360)
+      fig_ps.update_layout(barmode="overlay", title="Έλεγχος Κοινής Υποστήριξης (Propensity Score Overlap)", xaxis_title="e(X) = P(D=1|X)", yaxis_title="Συχνότητα")
       st.plotly_chart(fig_ps, use_container_width=True)
 
-  # ----------------------------------------------------------------------------
-  # 9.3: HPC SYSTEMS & TAIL LATENCY (p50, p99, p99.9)
-  # ----------------------------------------------------------------------------
   with sub3:
-    st.markdown("**Ανάλυση Ακραίας Καθυστέρησης Ουράς (Tail Latency Distribution) σε Συστήματα Τηλεμετρίας PMU**")
     tail_df = pd.DataFrame({
         "Αρχιτεκτονική Συστήματος": [
             "1. Legacy Monolithic CSV + Python Interpreter",
@@ -820,14 +761,6 @@ with tab9:
     fig_tail.add_trace(go.Bar(x=percentiles, y=[142.0, 380.0, 890.0, 1640.0], name="Legacy CSV/Python", marker_color="#dc2626"))
     fig_tail.add_trace(go.Bar(x=percentiles, y=[18.5, 41.0, 74.2, 138.0], name="B-Tree SQLite", marker_color="#f59e0b"))
     fig_tail.add_trace(go.Bar(x=percentiles, y=[2.1, 4.8, 8.3, 12.9], name="Arrow Zero-Copy + SIMD", marker_color="#16a34a"))
-    fig_tail.update_layout(
-        barmode="group",
-        yaxis_type="log",
-        title="Λογαριθμική Κλίμακα Tail Latency (ms) — Επίδραση Cache Misses & GC Pauses",
-        yaxis_title="Latency σε ms (Log Scale)",
-        template=theme["plotly_template"],
-        height=370,
-        paper_bgcolor="rgba(0,0,0,0)",
-        plot_bgcolor="rgba(0,0,0,0)",
-    )
+    fig_tail = style_plotly(fig_tail, height=370)
+    fig_tail.update_layout(barmode="group", yaxis_type="log", title="Λογαριθμική Κλίμακα Tail Latency (ms)", yaxis_title="Latency ms (Log)")
     st.plotly_chart(fig_tail, use_container_width=True)
