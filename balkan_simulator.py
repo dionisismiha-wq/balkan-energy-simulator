@@ -1,4 +1,6 @@
+import io
 import sqlite3
+import time
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -9,15 +11,43 @@ from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
 import streamlit as st
 
+# 1. Ρύθμιση σελίδας (Πρέπει πάντα να είναι η πρώτη εντολή Streamlit)
 st.set_page_config(
     page_title="Balkan Energy Lakehouse & AI Platform",
     page_icon="⚡",
     layout="wide",
 )
 
+# ==============================================================================
+# ΔΙΑΚΟΠΤΗΣ & ΣΥΝΑΡΤΗΣΗ ΕΠΕΞΗΓΗΣΕΩΝ ΧΡΗΣΤΗ (UI GUIDE SYSTEM)
+# ==============================================================================
+with st.sidebar:
+  st.header("⚙️ Πίνακας Ελέγχου Συστήματος")
+  st.markdown("**Αρχιτεκτονική:** Data Lakehouse (Parquet / SQL / Python)")
+  st.markdown("**Κάλυψη:** 11 Βαλκανικές Χώρες (2000–2025)")
+
+  show_guides = st.toggle(
+      "📖 Αναλυτικές Επεξηγήσεις Στοιχείων",
+      value=True,
+      help=(
+          "Ενεργοποιήστε ή απενεργοποιήστε τα επεξηγηματικά πλαίσια κάτω από"
+          " κάθε διάγραμμα και πίνακα."
+      ),
+  )
+  st.markdown("---")
+
+
+def render_guide(title: str, what_we_see: str, methodology: str, takeaway: str):
+  """Εμφανίζει ομοιόμορφο πλαίσιο επεξήγησης κάτω από κάθε γράφημα ή πίνακα."""
+  if show_guides:
+    with st.expander(f"ℹ️ Οδηγός Ανάγνωσης: {title}", expanded=False):
+      st.markdown(f"**👁️ Τι βλέπουμε:** {what_we_see}")
+      st.markdown(f"**⚙️ Πώς υπολογίζεται:** {methodology}")
+      st.markdown(f"**💡 Κύριο Συμπέρασμα:** {takeaway}")
+
 
 # ==============================================================================
-# 1. ΦΟΡΤΩΣΗ ΔΕΔΟΜΕΝΩΝ & ΔΗΜΙΟΥΡΓΙΑ ΒΑΣΗΣ SQLITE ΣΤΗ ΜΝΗΜΗ
+# ΦΟΡΤΩΣΗ ΔΕΔΟΜΕΝΩΝ PANEL
 # ==============================================================================
 @st.cache_data
 def load_balkan_data():
@@ -184,20 +214,20 @@ def load_balkan_data():
 
 df = load_balkan_data()
 
-# Sidebar με γενικές πληροφορίες & φίλτρα
 with st.sidebar:
-  st.header("⚙️ Πίνακας Ελέγχου Συστήματος")
-  st.markdown("**Αρχιτεκτονική:** Data Lakehouse (Parquet / SQL / Python)")
-  st.markdown("**Κάλυψη:** 11 Βαλκανικές Χώρες (2000–2025)")
   region_filter = st.multiselect(
       "Φίλτρο Θεσμικής Ομάδας:",
       options=["EU Balkans", "Non-EU Balkans"],
       default=["EU Balkans", "Non-EU Balkans"],
+      help=(
+          "Φιλτράρει τις χώρες ανάλογα με την ένταξή τους στην Ευρωπαϊκή Ένωση"
+          " (EU vs Non-EU)."
+      ),
   )
   st.divider()
   st.caption(
-      "Μεταπτυχιακή Διπλωματική Εργασία | Οικονομική Σύγκλιση, Ενεργειακή"
-      " Φτώχεια & Αγορά SEEPEX"
+      "Μεταπτυχιακή Διπλωματική Εργασία | Πληροφοριακά Συστήματα, Data"
+      " Engineering & Financial BI"
   )
 
 df_filtered = (
@@ -206,44 +236,58 @@ df_filtered = (
 
 # Επικεφαλίδα
 st.title(
-    "⚡ Διαδραστική Πλατφόρμα Ανάλυσης Ενεργειακής Ανισότητας & Σύγκλισης στα"
-    " Βαλκάνια"
+    "⚡ Διαδραστική Πλατφόρμα Ανάλυσης Ενεργειακής Ανισότητας, ΑΙ & Λογιστικής"
+    " στα Βαλκάνια"
 )
 st.markdown(
     "Ενοποιημένο περιβάλλον **Data Lakehouse, Οικονομετρίας (Two-Way Fixed"
-    " Effects), Μηχανικής Μάθησης (SHAP / Isolation Forest) και Live SQL**"
+    " Effects), Μηχανικής Μάθησης (SHAP / Isolation Forest), Financial BI &"
+    " Live SQL**"
 )
 
 # KPIs στην κορυφή
 k1, k2, k3, k4 = st.columns(4)
-k1.metric("Επιλεγμένες Χώρες", f"{len(df_filtered)} / 11")
+k1.metric(
+    "Επιλεγμένες Χώρες",
+    f"{len(df_filtered)} / 11",
+    help="Πλήθος χωρών που εμφανίζονται βάσει του φίλτρου στην αριστερή μπάρα.",
+)
 k2.metric(
     "Μέσο Κατά Κεφ. ΑΕΠ",
     f"{df_filtered['GDP_pc'].mean():,.0f} USD",
     "Χάσμα 2,42x EU/Non-EU",
+    help="Μέσο κατά κεφαλήν ΑΕΠ σε σταθερές τιμές δολαρίου (World Bank WDI).",
 )
 k3.metric(
     "Μέση Ενεργειακή Φτώχεια",
     f"{df_filtered['Cold_Homes'].mean():.1f}%",
     "Μ.Ο. Ε.Ε.-27: ~9,5%",
     delta_color="inverse",
+    help=(
+        "Ποσοστό πληθυσμού που δηλώνει αδυναμία διατήρησης επαρκούς ζέστης"
+        " στην κατοικία (Eurostat EU-SILC)."
+    ),
 )
 k4.metric(
     "Φτωχοί Ιδιοκτήτες Κατοικίας",
     f"{df_filtered['Poor_Owners'].mean():.1f}%",
     "Κύριος δομικός παράγοντας",
     delta_color="inverse",
+    help=(
+        "Ποσοστό νοικοκυριών κάτω από το όριο φτώχειας που ζουν σε ιδιόκτητες,"
+        " ενεργειακά μη αναβαθμισμένες κατοικίες."
+    ),
 )
 
-# 5 Πλήρεις Διαδραστικές Καρτέλες
+# 7 Διαδραστικές Καρτέλες
 tab1, tab2, tab3, tab4, tab5, tab6, tab7 = st.tabs([
-    "1. Μακροοικονομική & Ενεργειακή Σύγκλιση",
-    "2. Ενεργειακή Φτώχεια & Ιδιοκατοίκηση",
-    "3. Χονδρεμπορική Αγορά SEEPEX & Ανωμαλίες",
-    "4. Πρόβλεψη 5 Ημερών (XGBoost / MLP / SHAP)",
-    "5. Προσομοιωτής Πολιτικής & Smart Grids",
-    "6. Λογιστική & Χρηματοοικονομική Ανάλυση (Financial BI)",
-    "7. Data Engineering Lab (Live SQL & ETL Telemetry)",
+    "1. Χαρτογράφηση & Σύγκλιση",
+    "2. Προσομοιωτής Πολιτικής (What-If)",
+    "3. Εργαστήριο AI & SHAP",
+    "4. Αγορά SEEPEX & Isolation Forest",
+    "5. Βασικό SQL Query & Export",
+    "6. Λογιστική & Financial BI (CBAM / CAPEX)",
+    "7. Data Engineering Lab (OLAP & Feature Eng.)",
 ])
 
 # ==============================================================================
@@ -261,7 +305,12 @@ with tab1:
       "Μερίδιο ΑΠΕ στην Ηλεκτροπαραγωγή (%)": ("Renewables_Pct", "Greens"),
   }
   chosen_label = st.selectbox(
-      "Επιλέξτε δείκτη για απεικόνιση στον χάρτη:", list(metric_map.keys())
+      "Επιλέξτε δείκτη για απεικόνιση στον χάρτη:",
+      list(metric_map.keys()),
+      help=(
+          "Αλλάξτε τον δείκτη για να ενημερωθούν αυτόματα ο γεωγραφικός χάρτης"
+          " και η κατάταξη των χωρών."
+      ),
   )
   col_name, color_scale = metric_map[chosen_label]
 
@@ -304,6 +353,24 @@ with tab1:
     fig_rank.update_layout(height=450)
     st.plotly_chart(fig_rank, use_container_width=True)
 
+  render_guide(
+      title="Γεωγραφική Κατανομή & Θεσμική Σύγκριση (EU vs. Non-EU Balkans)",
+      what_we_see=(
+          "Αριστερά εμφανίζεται ο γεωγραφικός χάρτης των 11 βαλκανικών χωρών"
+          " χρωματισμένος ανάλογα με την ένταση του επιλεγμένου δείκτη, ενώ"
+          " δεξιά φαίνεται η κατάταξή τους ανά θεσμική ομάδα."
+      ),
+      methodology=(
+          "Ενοποίηση δεδομένων Eurostat (EU-SILC) και World Bank (WDI) σε"
+          " ενιαίο διαχρονικό πάνελ (2000–2025)."
+      ),
+      takeaway=(
+          "Τα κράτη-μέλη της Ε.Ε. (μπλε μπάρες) προηγούνται σταθερά σε ΑΕΠ και"
+          " υποδομές, ενώ τα Δυτικά Βαλκάνια (κόκκινες μπάρες) παρουσιάζουν"
+          " υψηλότερες απώλειες δικτύου και ενεργειακή φτώχεια."
+      ),
+  )
+
 # ==============================================================================
 # TAB 2: ΠΡΟΣΟΜΟΙΩΤΗΣ ΠΟΛΙΤΙΚΗΣ (WHAT-IF SIMULATOR)
 # ==============================================================================
@@ -313,25 +380,59 @@ with tab2:
 
   with col_ctrl:
     selected_country = st.selectbox(
-        "Επιλογή Χώρας Στόχου:", df["Χώρα"].tolist(), index=9
+        "Επιλογή Χώρας Στόχου:",
+        df["Χώρα"].tolist(),
+        index=9,
+        help="Επιλέξτε τη χώρα στην οποία θα εφαρμοστούν οι πολιτικές παρεμβάσεις.",
     )
     row = df[df["Χώρα"] == selected_country].iloc[0]
     st.markdown(f"**Θεσμική Ομάδα:** `{row['Ομάδα']}` (`{row['ISO3']}`)")
 
     energy_boost = st.slider(
-        "1. Αύξηση Ενεργειακής Διαθεσιμότητας (%)", 0, 60, 20, 5
+        "1. Αύξηση Ενεργειακής Διαθεσιμότητας (%)",
+        0,
+        60,
+        20,
+        5,
+        help=(
+            "Ποσοστιαία αύξηση της κατά κεφαλήν διαθέσιμης ενέργειας μέσω νέων"
+            " επενδύσεων παραγωγής."
+        ),
     )
     intensity_cut = st.slider(
-        "2. Μείωση Ενεργειακής Έντασης (MJ/$)", 0.0, 2.0, 0.6, 0.1
+        "2. Μείωση Ενεργειακής Έντασης (MJ/$)",
+        0.0,
+        2.0,
+        0.6,
+        0.1,
+        help=(
+            "Βελτίωση της ενεργειακής αποδοτικότητας της οικονομίας (λιγότερη"
+            " ενέργεια ανά μονάδα ΑΕΠ)."
+        ),
     )
     retrofit_share = st.slider(
-        "3. Επιδότηση Θερμομόνωσης Φτωχών Ιδιοκτητών (%)", 0, 50, 25, 5
+        "3. Επιδότηση Θερμομόνωσης Φτωχών Ιδιοκτητών (%)",
+        0,
+        50,
+        25,
+        5,
+        help=(
+            "Ποσοστό ευάλωτων ιδιόκτητων κατοικιών που εντάσσονται σε"
+            " προγράμματα ενεργειακής αναβάθμισης."
+        ),
     )
     carbon_price = st.slider(
-        "4. Τιμή Άνθρακα CBAM (€/τόνο CO₂)", 0, 120, 75, 5
+        "4. Τιμή Άνθρακα CBAM (€/τόνο CO₂)",
+        0,
+        120,
+        75,
+        5,
+        help=(
+            "Ευρωπαϊκός συνοριακός φόρος άνθρακα (CBAM) που επιβαρύνει τις"
+            " χώρες με υψηλό μερίδιο λιγνίτη."
+        ),
     )
 
-  # Οικονομετρικοί υπολογισμοί Fixed Effects (β1=1.0702, β2=-0.8062, δ1=-18.4912)
   base_gdp = row["GDP_pc"]
   base_cold = row["Cold_Homes"]
   delta_log_gdp = (1.0702 * np.log(1 + energy_boost / 100.0)) + (
@@ -339,11 +440,8 @@ with tab2:
   )
   sim_gdp_fe = base_gdp * np.exp(delta_log_gdp)
 
-  # Επιβάρυνση CBAM αν το μερίδιο άνθρακα είναι υψηλό
   cbam_penalty_pct = (row["Coal_Share"] / 100.0) * (carbon_price / 100.0) * 4.5
   sim_gdp_net = sim_gdp_fe * (1 - cbam_penalty_pct / 100.0)
-
-  # Νέα Ενεργειακή Φτώχεια
   sim_cold = max(
       1.5, base_cold + (-18.4912 * delta_log_gdp) + (-0.35 * retrofit_share)
   )
@@ -354,18 +452,21 @@ with tab2:
         "Προβλεπόμενο ΑΕΠ (καθαρό CBAM)",
         f"{sim_gdp_net:,.0f} USD",
         f"{sim_gdp_net - base_gdp:+,.0f} USD",
+        help="Εκτιμώμενο κατά κεφαλήν ΑΕΠ μετά τις παρεμβάσεις και την αφαίρεση του κόστους CBAM.",
     )
     m2.metric(
         "Επιβάρυνση Άνθρακα CBAM",
         f"-{cbam_penalty_pct:.2f}%",
         f"Μερίδιο Άνθρακα: {row['Coal_Share']}%",
         delta_color="inverse",
+        help="Ποσοστιαία απώλεια ανταγωνιστικότητας λόγω εξάρτησης από τον άνθρακα.",
     )
     m3.metric(
         "Νέα Ενεργειακή Φτώχεια",
         f"{sim_cold:.1f}%",
         f"{sim_cold - base_cold:.1f} π.μ.",
         delta_color="inverse",
+        help="Προβλεπόμενο ποσοστό πληθυσμού με αδυναμία θέρμανσης μετά τις επιδοτήσεις.",
     )
 
     comp_df = pd.DataFrame({
@@ -392,6 +493,25 @@ with tab2:
     fig_sim.update_layout(showlegend=False, height=360)
     st.plotly_chart(fig_sim, use_container_width=True)
 
+  render_guide(
+      title="Προσομοιωτής Οικονομετρικών Παρεμβάσεων (Two-Way Fixed Effects)",
+      what_we_see=(
+          "Σύγκριση του τρέχοντος κατά κεφαλήν ΑΕΠ της επιλεγμένης χώρας"
+          " (κόκκινο), του προβλεπόμενου ΑΕΠ μετά τις παρεμβάσεις (πράσινο)"
+          " και του ευρωπαϊκού μέσου όρου των Βαλκανίων (μπλε)."
+      ),
+      methodology=(
+          "Εφαρμογή των εκτιμημένων ελαστικοτήτων του μοντέλου Fixed Effects"
+          " (β₁ = 1,0702 για την ενέργεια, β₂ = -0,8062 για την ενεργειακή"
+          " ένταση και δ₁ = -18,49 για τη φτώχεια)."
+      ),
+      takeaway=(
+          "Η αύξηση της ενεργειακής επάρκειας σε συνδυασμό με τη θερμομόνωση"
+          " κατοικιών επιταχύνει τη σύγκλιση και αντισταθμίζει τις κυρώσεις"
+          " άνθρακα CBAM."
+      ),
+  )
+
 # ==============================================================================
 # TAB 3: ΕΡΓΑΣΤΗΡΙΟ AI & ΕΡΜΗΝΕΥΣΙΜΟΤΗΤΑ SHAP
 # ==============================================================================
@@ -400,12 +520,27 @@ with tab3:
   c_param, c_shap = st.columns([1, 2])
 
   with c_param:
-    n_trees = st.slider("Πλήθος Δέντρων Random Forest:", 50, 500, 200, 50)
+    n_trees = st.slider(
+        "Πλήθος Δέντρων Random Forest:",
+        50,
+        500,
+        200,
+        50,
+        help="Αριθμός δέντρων απόφασης (n_estimators) στον αλγόριθμο Random Forest.",
+    )
     ridge_alpha = st.slider(
-        "Παράμετρος Ομαλοποίησης Ridge (α):", 0.1, 10.0, 1.5, 0.1
+        "Παράμετρος Ομαλοποίησης Ridge (α):",
+        0.1,
+        10.0,
+        1.5,
+        0.1,
+        help="Ποινή L2 regularization για την αποφυγή υπερπροσαρμογής (Overfitting).",
     )
     country_shap = st.selectbox(
-        "Χώρα για Ερμηνευσιμότητα SHAP:", df["Χώρα"].tolist(), index=10
+        "Χώρα για Ερμηνευσιμότητα SHAP:",
+        df["Χώρα"].tolist(),
+        index=10,
+        help="Επιλέξτε χώρα για να δείτε πώς κάθε μεταβλητή επηρεάζει την πρόβλεψη του ΑΕΠ.",
     )
 
   features = [
@@ -435,11 +570,13 @@ with tab3:
         "Πρόβλεψη Random Forest",
         f"{pred_rf:,.0f} USD",
         f"Σφάλμα: {pred_rf - y.iloc[idx]:+,.0f}",
+        help="Πρόβλεψη μη γραμμικού συνόλου δέντρων (Ensemble).",
     )
     st.metric(
         "Πρόβλεψη Log-Ridge",
         f"{pred_ridge:,.0f} USD",
         f"Σφάλμα: {pred_ridge - y.iloc[idx]:+,.0f}",
+        help="Πρόβλεψη λογαριθμικής παλινδρόμησης με ομαλοποίηση L2.",
     )
 
   with c_shap:
@@ -475,6 +612,24 @@ with tab3:
     fig_shap.update_layout(height=400)
     st.plotly_chart(fig_shap, use_container_width=True)
 
+  render_guide(
+      title="Επεξηγήσιμη Τεχνητή Νοημοσύνη (SHAP Values)",
+      what_we_see=(
+          "Οι οριζόντιες μπάρες δείχνουν πόσα δολάρια προσθέτει (πράσινο) ή"
+          " αφαιρεί (κόκκινο) κάθε χαρακτηριστικό από τη μέση πρόβλεψη του"
+          " μοντέλου για τη συγκεκριμένη χώρα."
+      ),
+      methodology=(
+          "Θεωρία Παιγνίων Shapley Additive Explanations (SHAP) επί εκπαιδευμένου"
+          " μοντέλου Random Forest."
+      ),
+      takeaway=(
+          "Αποδεικνύει ότι οι κοινωνικο-δομικοί δείκτες (φτωχοί ιδιοκτήτες &"
+          " αδυναμία θέρμανσης) αποτελούν τους ισχυρότερους προβλεπτικούς"
+          " παράγοντες υστέρησης."
+      ),
+  )
+
 # ==============================================================================
 # TAB 4: ΑΓΟΡΑ SEEPEX & ISOLATION FOREST ANOMALY DETECTION
 # ==============================================================================
@@ -484,10 +639,20 @@ with tab4:
 
   with col_s1:
     contam = st.slider(
-        "Ευαισθησία Isolation Forest (Contamination %):", 1.0, 10.0, 3.5, 0.5
+        "Ευαισθησία Isolation Forest (Contamination %):",
+        1.0,
+        10.0,
+        3.5,
+        0.5,
+        help="Αναμενόμενο ποσοστό ακραίων παρατηρήσεων (outliers) στο δείγμα.",
     )
     crisis_shock = st.slider(
-        "Ένταση Βραδινών Αιχμών (18:00–21:00):", 1.0, 2.5, 1.5, 0.1
+        "Ένταση Βραδινών Αιχμών (18:00–21:00):",
+        1.0,
+        2.5,
+        1.5,
+        0.1,
+        help="Πολλαπλασιαστής έντασης των βραδινών εκρήξεων ζήτησης.",
     )
 
   np.random.seed(42)
@@ -552,6 +717,24 @@ with tab4:
     fig_sp.update_layout(height=400)
     st.plotly_chart(fig_sp, use_container_width=True)
 
+  render_guide(
+      title="Ωριαία Τιμή Εκκαθάρισης Αγοράς SEEPEX (MCP) & Price Spikes",
+      what_we_see=(
+          "Η γκρι γραμμή και οι μπλε κουκκίδες δείχνουν την κανονική ημερήσια"
+          " διακύμανση της τιμής ηλεκτρισμού (€/MWh). Οι κόκκινες κουκκίδες"
+          " είναι οι ακραίες εκρήξεις τιμών (Price Spikes)."
+      ),
+      methodology=(
+          "Μη επιβλεπόμενος αλγόριθμος απομόνωσης δέντρων (Isolation Forest)"
+          " που εντοπίζει στατιστικές ανωμαλίες χωρίς ανάγκη προηγούμενης"
+          " επισήμανσης."
+      ),
+      takeaway=(
+          "Οι εκρήξεις τιμών εκδηλώνονται συστηματικά τις βραδινές ώρες αιχμής"
+          " (18:00–21:00) λόγω έλλειψης ευελιξίας και αποθήκευσης στο δίκτυο."
+      ),
+  )
+
 # ==============================================================================
 # TAB 5: LIVE SQL ENGINE & ΕΞΑΓΩΓΗ ΔΕΔΟΜΕΝΩΝ
 # ==============================================================================
@@ -599,6 +782,22 @@ with tab5:
     except Exception as e:
       st.error(f"Σφάλμα σύνταξης SQL: {e}")
 
+  render_guide(
+      title="Σχεσιακή Βάση Δεδομένων SQLite & Εξαγωγή Αναφορών",
+      what_we_see=(
+          "Έναν ζωντανό επεξεργαστή ερωτημάτων SQL που εκτελείται απευθείας"
+          " πάνω στον κεντρικό πίνακα balkan_master_panel."
+      ),
+      methodology=(
+          "Ενδομνημονική σχεσιακή βάση (In-Memory SQLite) με δυνατότητα"
+          " εξαγωγής σε αρχείο CSV κωδικοποίησης UTF-8."
+      ),
+      takeaway=(
+          "Επιτρέπει στους αναλυτές δεδομένων να πραγματοποιούν ad-hoc"
+          " ερωτήματα και ομαδοποιήσεις χωρίς εξωτερικό λογισμικό."
+      ),
+  )
+
 # ==============================================================================
 # TAB 6: FINANCIAL & CARBON ACCOUNTING BI (ΛΟΓΙΣΤΙΚΗ & ΧΡΗΜΑΤΟΟΙΚΟΝΟΜΙΚΑ)
 # ==============================================================================
@@ -613,7 +812,6 @@ with tab6:
       "**Καθαρής Παρούσας Αξίας (NPV / Payback Period)**."
   )
 
-  # --- Πλαϊνές / Επάνω Παράμετροι Λογιστικής Προσομοίωσης ---
   col_p1, col_p2, col_p3, col_p4 = st.columns(4)
   with col_p1:
     selected_country_fin = st.selectbox(
@@ -627,6 +825,7 @@ with tab6:
         ],
         index=0,
         key="fin_country",
+        help="Επιλέξτε την εθνική ενεργειακή αγορά για λογιστική ανάλυση.",
     )
   with col_p2:
     carbon_price_eur = st.slider(
@@ -636,6 +835,10 @@ with tab6:
         value=85,
         step=5,
         key="fin_cbam",
+        help=(
+            "Μηχανισμός Συνοριακής Προσαρμογής Άνθρακα της Ε.Ε. (CBAM). Ορίζει"
+            " πόσα ευρώ πληρώνει ένας παραγωγός ανά τόνο CO₂."
+        ),
     )
   with col_p3:
     capex_invest_meur = st.slider(
@@ -645,6 +848,10 @@ with tab6:
         value=120,
         step=10,
         key="fin_capex",
+        help=(
+            "Αρχική κεφαλαιουχική δαπάνη (CAPEX) για έξυπνους μετρητές, οπτικές"
+            " ίνες FTTH και συγχρονισμό PTP."
+        ),
     )
   with col_p4:
     wacc_rate = st.slider(
@@ -654,9 +861,12 @@ with tab6:
         value=7.5,
         step=0.5,
         key="fin_wacc",
+        help=(
+            "Σταθμισμένο Μέσο Κόστος Κεφαλαίου (WACC) για την προεξόφληση των"
+            " μελλοντικών ταμειακών ροών."
+        ),
     )
 
-  # --- Βασικά Δεδομένα Αναφοράς ανά Χώρα (Εκπομπές CO2 в Mt, Απώλειες σε GWh, Τιμή €/MWh, Βασικά Έσοδα Εκ. €) ---
   country_fin_params = {
       "Σερβία (SRB)": {
           "co2_mt": 4.82,
@@ -697,15 +907,13 @@ with tab6:
 
   p = country_fin_params[selected_country_fin]
 
-  # --- Λογιστικοί Υπολογισμοί P&L, EBITDA & NPV ---
   cbam_liability_meur = p["co2_mt"] * carbon_price_eur
-  grid_loss_cost_meur = (p["loss_gwh"] * p["tariff"]) / 1000.0  # σε Εκατ. €
+  grid_loss_cost_meur = (p["loss_gwh"] * p["tariff"]) / 1000.0
 
   base_ebitda_meur = p["base_rev"] * (p["base_ebitda_pct"] / 100.0)
   post_cbam_ebitda_meur = max(base_ebitda_meur - cbam_liability_meur, 0.0)
   post_cbam_ebitda_pct = (post_cbam_ebitda_meur / p["base_rev"]) * 100.0
 
-  # Εξοικονόμηση από μείωση απωλειών δικτύου κατά 45% μέσω Smart Grids + FTTH/PTP
   annual_cash_inflow_meur = grid_loss_cost_meur * 0.45
   payback_years = (
       capex_invest_meur / annual_cash_inflow_meur
@@ -713,47 +921,45 @@ with tab6:
       else 99.9
   )
 
-  # Υπολογισμός 8ετούς Καθαρής Παρούσας Αξίας (NPV)
   r = wacc_rate / 100.0
   years_horizon = np.arange(1, 9)
   discounted_cf = [annual_cash_inflow_meur / ((1 + r) ** t) for t in years_horizon]
   npv_8yr_meur = sum(discounted_cf) - capex_invest_meur
 
-  # --- Εμφάνιση KPI Cards ---
   st.markdown("---")
-  k1, k2, k3, k4 = st.columns(4)
-  k1.metric(
+  fk1, fk2, fk3, fk4 = st.columns(4)
+  fk1.metric(
       label="Ετήσια Επιβάρυνση CBAM (COGS)",
       value=f"{cbam_liability_meur:.1f} Εκ. €",
       delta=f"-{(cbam_liability_meur/p['base_rev'])*100:.1f}% επί Εσόδων",
       delta_color="inverse",
+      help="Ετήσιο κόστος δικαιωμάτων εκπομπών που επιβαρύνει το κόστος πωληθέντων.",
   )
-  k2.metric(
+  fk2.metric(
       label="Λογιστική Ζημία Απωλειών Δικτύου",
       value=f"{grid_loss_cost_meur:.1f} Εκ. €",
       delta=f"Ανάκτηση: +{annual_cash_inflow_meur:.1f} Εκ. €/έτος",
+      help="Χρηματική αξία της ενέργειας που χάνεται λόγω ρευματοκλοπών και τεχνικών απωλειών.",
   )
-  k3.metric(
+  fk3.metric(
       label="Περιθώριο EBITDA (Μετά CBAM)",
       value=f"{post_cbam_ebitda_pct:.1f}%",
       delta=f"{post_cbam_ebitda_pct - p['base_ebitda_pct']:.1f} ποσ. μονάδες",
       delta_color="normal",
+      help="EBITDA Margin: Λειτουργικά κέρδη προ αποσβέσεων ως ποσοστό των εσόδων.",
   )
-  k4.metric(
+  fk4.metric(
       label="Απόσβεση (Payback) & NPV 8ετίας",
       value=f"{payback_years:.1f} Έτη",
       delta=f"NPV: {npv_8yr_meur:+.1f} Εκ. €",
+      help="Έτη πλήρους απόσβεσης του CAPEX και Καθαρή Παρούσα Αξία (NPV) στον ορίζοντα 8ετίας.",
   )
 
   st.markdown("---")
 
-  # --- Γραφήματα Χρηματοοικονομικής Ανάλυσης (2 Στήλες) ---
-  import plotly.graph_objects as go
-
   g_col1, g_col2 = st.columns(2)
 
   with g_col1:
-    # Γράφημα 1: Σωρευτικές Ταμειακές Ροές (Cumulative Cash Flow & Payback Point)
     yrs = list(range(0, 9))
     cum_cf = [-capex_invest_meur]
     for y in range(1, 9):
@@ -784,7 +990,6 @@ with tab6:
     st.plotly_chart(fig_cf, use_container_width=True)
 
   with g_col2:
-    # Γράφημα 2: Σύγκριση Περιθωρίου EBITDA ανά Στρατηγικό Σενάριο
     modernized_ebitda_pct = (
         (base_ebitda_meur + annual_cash_inflow_meur - (cbam_liability_meur * 0.25))
         / p["base_rev"]
@@ -821,7 +1026,23 @@ with tab6:
     )
     st.plotly_chart(fig_ebitda, use_container_width=True)
 
-  # --- Συνοπτικός Λογιστικός Πίνακας P&L (Statement of Profit or Loss) ---
+  render_guide(
+      title="Σωρευτικές Ταμειακές Ροές (CAPEX Payback) & Περιθώριο EBITDA",
+      what_we_see=(
+          "Αριστερά φαίνεται πότε η επένδυση περνά από αρνητικές (κόκκινες) σε"
+          " θετικές (πράσινες) ταμειακές ροές. Δεξιά συγκρίνεται το περιθώριο"
+          " κέρδους EBITDA σε 3 στρατηγικά σενάρια."
+      ),
+      methodology=(
+          "Προεξόφληση ταμειακών ροών (DCF) με επιτόκιο WACC και αποτίμηση"
+          " ανάκτησης εσόδων (45% μείωση απωλειών δικτύου)."
+      ),
+      takeaway=(
+          "Οι επενδύσεις σε Smart Grids & FTTH αποσβένονται σε λίγα έτη και"
+          " θωρακίζουν την κερδοφορία έναντι του φόρου άνθρακα CBAM."
+      ),
+  )
+
   st.markdown("#### Συνοπτική Κατάσταση Αποτελεσμάτων Χρήσης (Pro-Forma P&L — Εκ. €)")
   pnl_df = pd.DataFrame({
       "Λογιστικό Κονδύλι (Pro-Forma P&L)": [
@@ -857,167 +1078,101 @@ with tab6:
   })
   st.dataframe(pnl_df, use_container_width=True, hide_index=True)
 
+  render_guide(
+      title="Συνοπτική Κατάσταση Αποτελεσμάτων Χρήσης (Pro-Forma P&L)",
+      what_we_see=(
+          "Αναλυτικός λογιστικός πίνακας εσόδων, ζημιών δικτύου, φόρου CBAM και"
+          " τελικών λειτουργικών κερδών EBITDA ανά σενάριο."
+      ),
+      methodology=(
+          "Λογιστική τυποποίηση κατά τα πρότυπα ΔΠΧΑ (IFRS) για ενεργειακούς"
+          " διαχειριστές και παραγωγούς."
+      ),
+      takeaway=(
+          "Η αδράνεια (Σενάριο 2) συρρικνώνει δραματικά τα λειτουργικά κέρδη,"
+          " ενώ ο εκσυγχρονισμός (Σενάριο 3) μεγιστοποιεί την αξία."
+      ),
+  )
+
 # ==============================================================================
 # TAB 7: DATA ENGINEERING LAB (LIVE SQL CONSOLE, PARQUET EXPORT & TELEMETRY)
 # ==============================================================================
 with tab7:
   st.subheader(
-      "Εργαστήριο Data Engineering: Ζωντανή Εκτέλεση SQL, Εξαγωγή Parquet &"
-      " Τηλεμετρία"
+      "Εργαστήριο Data Engineering: Προχωρημένα OLAP Queries, Parquet &"
+      " Feature Engineering"
   )
   st.markdown(
-      "Αλληλεπιδράστε απευθείας με τον σχεσιακό/στηλοειδή πυρήνα δεδομένων της"
-      " έρευνας μέσω ενσωματωμένης μηχανής **SQLite / OLAP**."
+      "Δοκιμάστε αναλυτικά ερωτήματα **SQL Window Functions (`PERCENT_RANK()`)**,"
+      " μετρήστε την ταχύτητα εκτέλεσης (**Latency ms**), εξάγετε δεδομένα σε"
+      " **Apache Parquet** και εξερευνήστε την **Κυκλική Κωδικοποίηση Χρόνου**."
   )
 
-  import io
-  import sqlite3
-  import time
-  import plotly.graph_objects as go
+  conn_olap = sqlite3.connect(":memory:")
+  df.to_sql("balkan_master_panel", conn_olap, index=False, if_exists="replace")
 
-  # 1. Δημιουργία ενδομνημονικής βάσης SQLite (In-Memory Relational Engine)
-  conn = sqlite3.connect(":memory:")
-
-  # Αν υπάρχει ήδη το DataFrame df_panel στο app σου, το περνάμε στη SQLite.
-  # Αλλιώς δημιουργούμε ένα αντιπροσωπευτικό δείγμα για να δουλεύει πάντα χωρίς σφάλμα:
-  if "df_panel" in locals() or "df_panel" in globals():
-    df_sql_source = df_panel.copy()
-  else:
-    df_sql_source = pd.DataFrame({
-        "iso3": [
-            "GRC",
-            "HRV",
-            "ROU",
-            "BGR",
-            "SRB",
-            "MNE",
-            "BIH",
-            "MKD",
-            "ALB",
-            "XKX",
-        ],
-        "country_name": [
-            "Ελλάδα",
-            "Κροατία",
-            "Ρουμανία",
-            "Βουλγαρία",
-            "Σερβία",
-            "Μαυροβούνιο",
-            "Βοσνία-Ερζ.",
-            "Β. Μακεδονία",
-            "Αλβανία",
-            "Κόσοβο",
-        ],
-        "region_group": [
-            "EU Balkans",
-            "EU Balkans",
-            "EU Balkans",
-            "EU Balkans",
-            "Non-EU Balkans",
-            "Non-EU Balkans",
-            "Non-EU Balkans",
-            "Non-EU Balkans",
-            "Non-EU Balkans",
-            "Non-EU Balkans",
-        ],
-        "year": [2023] * 10,
-        "gdp_pc_unified": [
-            22990,
-            21460,
-            18410,
-            15790,
-            11360,
-            11330,
-            8420,
-            7680,
-            8360,
-            5940,
-        ],
-        "grid_loss_pct": [
-            6.8,
-            7.4,
-            9.1,
-            8.5,
-            11.9,
-            12.8,
-            10.4,
-            13.2,
-            17.6,
-            18.4,
-        ],
-        "unable_to_keep_warm_pct": [
-            19.2,
-            7.0,
-            15.2,
-            20.7,
-            14.8,
-            16.5,
-            24.1,
-            30.4,
-            35.8,
-            40.2,
-        ],
-    })
-
-  df_sql_source.to_sql(
-      "balkan_master_panel", conn, index=False, if_exists="replace"
-  )
-
-  # 2. Προεπιλεγμένα Ερωτήματα SQL (Presets) για άμεση επίδειξη
-  st.markdown("#### 1. Διαδραστική Κονσόλα Ερωτημάτων SQL (Live Query Execution)")
-  preset_queries = {
+  st.markdown("#### 1. Προχωρημένη Κονσόλα OLAP SQL & Τηλεμετρία Απόδοσης")
+  olap_presets = {
       "Κανόνας Προτεραιότητας Smart Grids & PERCENT_RANK()": """SELECT 
-    iso3 AS "Κωδικός",
-    country_name AS "Χώρα",
-    region_group AS "Θεσμική_Ομάδα",
-    ROUND(gdp_pc_unified, 0) AS "ΑΕΠ_per_Capita",
-    ROUND(grid_loss_pct, 1) AS "Απώλειες_Δικτύου_Pct",
-    ROUND(100.0 * PERCENT_RANK() OVER (ORDER BY gdp_pc_unified), 1) AS "Εκατοστημόριο_ΑΕΠ",
+    ISO3 AS "Κωδικός",
+    Χώρα,
+    Ομάδα AS "Θεσμική_Ομάδα",
+    GDP_pc AS "ΑΕΠ_per_Capita",
+    Grid_Loss AS "Απώλειες_Δικτύου_Pct",
+    ROUND(100.0 * PERCENT_RANK() OVER (ORDER BY GDP_pc), 1) AS "Εκατοστημόριο_ΑΕΠ",
     CASE 
-        WHEN grid_loss_pct > 14.0 AND gdp_pc_unified < 8000 THEN 'Προτεραιότητα Smart Grids'
+        WHEN Grid_Loss > 14.0 AND GDP_pc < 8000 THEN 'Προτεραιότητα Smart Grids'
         ELSE 'Εκτός κριτηρίου'
     END AS "Στρατηγική_Απόφαση"
 FROM balkan_master_panel
-WHERE year = 2023
-ORDER BY gdp_pc_unified DESC;""",
+ORDER BY GDP_pc DESC;""",
       "Συγκεντρωτική Ανάλυση Ομάδων (GROUP BY & Aggregations)": """SELECT 
-    region_group AS "Θεσμική_Ομάδα",
-    COUNT(DISTINCT iso3) AS "Πλήθος_Χωρών",
-    ROUND(AVG(gdp_pc_unified), 1) AS "Μέσο_ΑΕΠ_USD",
-    ROUND(AVG(grid_loss_pct), 2) AS "Μέσες_Απώλειες_Pct",
-    ROUND(AVG(unable_to_keep_warm_pct), 2) AS "Μέση_Ενεργ_Φτώχεια_Pct"
+    Ομάδα AS "Θεσμική_Ομάδα",
+    COUNT(DISTINCT ISO3) AS "Πλήθος_Χωρών",
+    ROUND(AVG(GDP_pc), 1) AS "Μέσο_ΑΕΠ_USD",
+    ROUND(AVG(Grid_Loss), 2) AS "Μέσες_Απώλειες_Pct",
+    ROUND(AVG(Cold_Homes), 2) AS "Μέση_Ενεργ_Φτώχεια_Pct"
 FROM balkan_master_panel
-GROUP BY region_group;""",
+GROUP BY Ομάδα;""",
   }
 
-  selected_preset = st.selectbox(
-      "Επιλέξτε έτοιμο αναλυτικό ερώτημα ή τροποποιήστε τον κώδικα παρακάτω:",
-      list(preset_queries.keys()),
+  selected_olap = st.selectbox(
+      "Επιλέξτε έτοιμο ερώτημα OLAP SQL:",
+      list(olap_presets.keys()),
+      key="olap_select",
   )
-  user_sql = st.text_area(
-      "Επεξεργαστής SQL (SQLite Engine):",
-      value=preset_queries[selected_preset],
+  user_olap_sql = st.text_area(
+      "Επεξεργαστής SQL (SQLite OLAP Engine):",
+      value=olap_presets[selected_olap],
       height=210,
+      key="olap_editor",
   )
 
-  if st.button("▶ Εκτέλεση Ερωτήματος SQL", type="primary"):
+  if st.button("▶ Εκτέλεση Ερωτήματος OLAP SQL", type="primary"):
     try:
       t_start = time.perf_counter()
-      sql_result_df = pd.read_sql_query(user_sql, conn)
+      sql_result_df = pd.read_sql_query(user_olap_sql, conn_olap)
       elapsed_ms = (time.perf_counter() - t_start) * 1000.0
 
-      # Μετρικές Τηλεμετρίας (Query Telemetry)
-      m1, m2, m3 = st.columns(3)
-      m1.metric("Χρόνος Εκτέλεσης (Latency)", f"{elapsed_ms:.2f} ms")
-      m2.metric("Επιστρεφόμενες Εγγραφές", f"{len(sql_result_df)} γραμμές")
-      m3.metric(
+      tm1, tm2, tm3 = st.columns(3)
+      tm1.metric(
+          "Χρόνος Εκτέλεσης (Latency)",
+          f"{elapsed_ms:.2f} ms",
+          help="Χρόνος απόκρισης της μηχανής SQL σε χιλιοστά του δευτερολέπτου.",
+      )
+      tm2.metric(
+          "Επιστρεφόμενες Εγγραφές",
+          f"{len(sql_result_df)} γραμμές",
+          help="Πλήθος γραμμών που επέστρεψε το ερώτημα.",
+      )
+      tm3.metric(
           "Μέγεθος στη Μνήμη (RAM)",
           f"{sql_result_df.memory_usage(deep=True).sum() / 1024:.2f} KB",
+          help="Αποτύπωμα μνήμης του αποτελέσματος.",
       )
 
       st.dataframe(sql_result_df, use_container_width=True, hide_index=True)
 
-      # 3. Κουμπιά Εξαγωγής Δεδομένων (CSV & Apache Parquet)
       st.markdown("#### 2. Εξαγωγή Αποτελεσμάτων (Data Pipeline Export)")
       exp_col1, exp_col2 = st.columns(2)
 
@@ -1026,7 +1181,7 @@ GROUP BY region_group;""",
         st.download_button(
             label="📥 Λήψη Αποτελεσμάτων σε CSV (UTF-8)",
             data=csv_bytes,
-            file_name="balkan_sql_query_output.csv",
+            file_name="balkan_olap_output.csv",
             mime="text/csv",
         )
 
@@ -1036,16 +1191,32 @@ GROUP BY region_group;""",
         st.download_button(
             label="⚡ Λήψη σε Στηλοειδές Apache Parquet",
             data=parquet_buffer.getvalue(),
-            file_name="balkan_sql_query_output.parquet",
+            file_name="balkan_olap_output.parquet",
             mime="application/octet-stream",
         )
 
     except Exception as e:
       st.error(f"Σφάλμα σύνταξης SQL: {e}")
 
+  render_guide(
+      title="Ζωντανή Εκτέλεση OLAP SQL & Εξαγωγή Apache Parquet",
+      what_we_see=(
+          "Εκτέλεση αναλυτικών συναρτήσεων παραθύρου (Window Functions) με"
+          " ζωντανή μέτρηση ταχύτητας (ms) και δυνατότητα εξαγωγής σε στηλοειδή"
+          " μορφή Apache Parquet."
+      ),
+      methodology=(
+          "Χρήση PERCENT_RANK() και CASE WHEN για τον αυτόματο εντοπισμό χωρών"
+          " που χρήζουν άμεσης εγκατάστασης Smart Grids."
+      ),
+      takeaway=(
+          "Το Κόσοβο και η Αλβανία πληρούν τα κριτήρια υψηλής προτεραιότητας"
+          " λόγω συνδυασμού χαμηλού ΑΕΠ και υψηλών απωλειών δικτύου (>14%)."
+      ),
+  )
+
   st.markdown("---")
 
-  # 4. Διαδραστικό Feature Engineering: Κυκλική Κωδικοποίηση Ώρας (sin/cos)
   st.markdown(
       "#### 3. Προσομοίωση Feature Engineering: Κυκλική Κωδικοποίηση Χρόνου"
       " (Cyclical Encoding)"
@@ -1055,6 +1226,7 @@ GROUP BY region_group;""",
       0,
       23,
       19,
+      help="Δείτε πώς η ώρα μετατρέπεται σε συντεταγμένες (cos, sin) για τα νευρωνικά δίκτυα.",
   )
 
   hours_arr = np.arange(0, 24)
@@ -1103,10 +1275,30 @@ GROUP BY region_group;""",
 
   with fe_c2:
     st.info(
-        f"**Γιατί χρησιμοποιούμε $\sin/\cos$ αντί για απλό αριθμό `{selected_hour}`:**\n\n"
-        "• Αν δώσουμε στο Νευρωνικό Δίκτυο (`MLP`) τους αριθμούς `23` και `0`, θα νομίζει ότι απέχουν μέγιστα μεταξύ τους.\n\n"
-        f"• Με τον τριγωνομετρικό μετασχηματισμό, η ώρα **{selected_hour:02d}:00** μετατρέπεται στο ζεύγος συντεταγμένων:\n"
+        f"**Γιατί χρησιμοποιούμε $\sin/\cos$ αντί για απλό αριθμό"
+        f" `{selected_hour}`:**\n\n"
+        "• Αν δώσουμε στο Νευρωνικό Δίκτυο (`MLP`) τους αριθμούς `23` και"
+        " `0`, θα νομίζει ότι απέχουν μέγιστα μεταξύ τους.\n\n"
+        f"• Με τον τριγωνομετρικό μετασχηματισμό, η ώρα **{selected_hour:02d}:00**"
+        " μετατρέπεται στο ζεύγος συντεταγμένων:\n"
         f"  - $\\text{{Hour}}_{{\\sin}} = {sel_sin:.4f}$\n"
         f"  - $\\text{{Hour}}_{{\\cos}} = {sel_cos:.4f}$\n\n"
-        "• Έτσι διατηρείται η φυσική γειτνίαση της βραδινής αιχμής (`18:00 - 21:00`) και της αλλαγής ημέρας (`23:00 -> 00:00`)."
+        "• Έτσι διατηρείται η φυσική γειτνίαση της βραδινής αιχμής"
+        " (`18:00 - 21:00`) και της αλλαγής ημέρας (`23:00 -> 00:00`)."
     )
+
+  render_guide(
+      title="Κυκλική Κωδικοποίηση Χρόνου (Cyclical Temporal Encoding)",
+      what_we_see=(
+          "Ένα μοναδιαίο ρολόι 24 ωρών στον καρτεσιανό χώρο (cos, sin), όπου η"
+          " επιλεγμένη ώρα επισημαίνεται με κόκκινο ρόμβο."
+      ),
+      methodology=(
+          "Τριγωνομετρικός μετασχηματισμός sin(2πh/24) και cos(2πh/24) πριν την"
+          " είσοδο των δεδομένων στους αλγορίθμους XGBoost και MLP."
+      ),
+      takeaway=(
+          "Εξαλείφει την τεχνητή ασυνέχεια τα μεσάνυχτα (23:00 → 00:00),"
+          " βελτιώνοντας την ακρίβεια πρόβλεψης χρονοσειρών."
+      ),
+  )
